@@ -1,7 +1,18 @@
 import { json } from '@remix-run/node';
-import imagekit from '../imagekit';
-import { tursoDb } from './turso.server';
-import { Buffer } from 'buffer'; 
+import ImageKit from 'imagekit';
+
+const imagekit = new ImageKit({
+    publicKey: process.env.IMAGEKIT_PUBLIC_KEY,
+    privateKey: process.env.IMAGEKIT_PRIVATE_KEY,
+    urlEndpoint: process.env.IMAGEKIT_URL_ENDPOINT,
+});
+//  const getAuthParams = () => {
+//     return imagekit.getAuthenticationParameters();
+//   };
+const {token, expire, signature}= imagekit.getAuthenticationParameters()
+console.log(token, expire, signature, 'simple')
+
+
 
 export let action = async ({ request }) => {
     try {
@@ -14,13 +25,17 @@ export let action = async ({ request }) => {
             return json({ error: 'No file provided' });
         }
 
-        const arrayBuffer = await file.arrayBuffer();
+        // const arrayBuffer = await file.arrayBuffer();
 
-        const buffer = Buffer.from(arrayBuffer);
+        // const buffer = Buffer.from(arrayBuffer);
 
         const result = await imagekit.upload({
-            file: buffer,        
-            fileNameclear: file.name, 
+            file: file,        
+            fileName: file.name, 
+            token:token,
+            expire:expire,
+            signature:signature
+            
         });
 
         return json({ url: result.url });
