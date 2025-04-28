@@ -1,0 +1,54 @@
+{{ 'main.css' | asset_url | stylesheet_tag }}
+
+<div class="carousel-banner">
+    <div class="slides">
+      <div class="slide" style="background-image: url('https://images.unsplash.com/photo-1605733513791-73c51b00e165?auto=format&fit=crop&w=1400&q=80');">
+        <div class="slide-content">
+          <h2>New Arrivals</h2>
+          <p>Fresh fashion just dropped.</p>
+          <a href="#">Shop Now</a>
+        </div>
+      </div>
+
+      <div class="slide" style="background-image: url('https://images.unsplash.com/photo-1606788075762-9b7c3dcb23fd?auto=format&fit=crop&w=1400&q=80');">
+        <div class="slide-content">
+          <h2>Summer Vibes</h2>
+          <p>Get your essentials for the sunny days.</p>
+          <a href="#">Explore</a>
+        </div>
+      </div>
+
+      <div class="slide" style="background-image: url('https://images.unsplash.com/photo-1556740738-b6a63e27c4df?auto=format&fit=crop&w=1400&q=80');">
+        <div class="slide-content">
+          <h2>Sale is On</h2>
+          <p>Up to 50% off selected items.</p>
+          <a href="#">View Offers</a>
+        </div>
+      </div>
+
+      <div class="slide" style="background-image: url('https://images.unsplash.com/photo-1600180758890-6c7ee0d8361e?auto=format&fit=crop&w=1400&q=80');">
+        <div class="slide-content">
+          <h2>Style That Moves</h2>
+          <p>Performance and comfort in one.</p>
+          <a href="#">See Collection</a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  {% schema  %}
+  {
+    "name":"Banner",
+    "target":"section",
+    "settings":[
+        {
+        "type":"text",
+        "id":"banner",
+            "label":"banner",
+            "default":"rngvfngjjkngfgjfgkjfd"
+
+        }
+    ]
+}
+
+  {% endschema %}

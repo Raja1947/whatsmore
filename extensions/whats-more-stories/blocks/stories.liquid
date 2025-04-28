@@ -1,0 +1,50 @@
+{{ 'main.css' | asset_url | stylesheet_tag }}
+
+<div class="stories-container">
+  <div class="story">
+    <div class="story-image">
+      {%- comment -%} <img src="" alt="image"/> {%- endcomment -%}
+      raja
+    </div>
+    <div class="story-name">Alice</div>
+  </div>
+
+  <div class="story">
+    <div class="story-image">
+      {%- comment -%} <img src="" alt="image"/> {%- endcomment -%}
+      raja
+    </div>
+    <div class="story-name">Bob</div>
+  </div>
+
+  <div class="story">
+    <div class="story-image">
+      {%- comment -%} <img src="https://randomuser.me/api/portraits/women/3.jpg" alt="User 3"> {%- endcomment -%}
+      rajaaaaaaaa
+    </div>
+    <div class="story-name">{{ section.settings.text1 }}</div>
+  </div>
+
+  <div class="story">
+    <div class="story-image">
+      <img src="https://randomuser.me/api/portraits/women/5.jpg" alt="User 5">
+    </div>
+    <div class="story-name">Ella</div>
+  </div>
+</div>
+
+
+{% schema %}
+{
+"name":"Stories",
+"target":"section",
+"settings":[
+    {
+    "type":"text",
+    "id":"text1",
+    "label":"raja",
+    "default":"stories"
+    }
+]
+}
+{% endschema %}

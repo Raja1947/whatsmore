@@ -1,0 +1,86 @@
+{{ 'main.css' | asset_url | stylesheet_tag }}
+
+
+
+
+    <div class="carousel-wrapper">
+        <div class="carousel">
+          <!-- Repeat items (for infinite scroll feel) -->
+          <div class="carousel-item">
+            {% comment %} <img src="https://via.placeholder.com/300x300" alt="Item 1"> {% endcomment %}
+            <div class="carousel-info">
+              <div class="carousel-title">Sunglasses</div>
+              <div class="carousel-price">$29.99</div>
+            </div>
+          </div>
+          <div class="carousel-item">
+            {% comment %} <img src="https://via.placeholder.com/300x300" alt="Item 2"> {% endcomment %}
+            <div class="carousel-info">
+              <div class="carousel-title">Beach Hat</div>
+              <div class="carousel-price">$19.99</div>
+            </div>
+          </div>
+          <div class="carousel-item">
+            {% comment %} <img src="https://via.placeholder.com/300x300" alt="Item 3"> {% endcomment %}
+            <div class="carousel-info">
+              <div class="carousel-title">Flip Flops</div>
+              <div class="carousel-price">$14.99</div>
+            </div>
+          </div>
+          <div class="carousel-item">
+            {% comment %} <img src="https://via.placeholder.com/300x300" alt="Item 4"> {% endcomment %}
+            <div class="carousel-info">
+              <div class="carousel-title">Tropical Shirt</div>
+              <div class="carousel-price">$39.99</div>
+            </div>
+          </div>
+    
+          <!-- Repeat same items for smooth looping -->
+          <div class="carousel-item">
+            {% comment %} <img src="https://via.placeholder.com/300x300" alt="Item 1"> {% endcomment %}
+            <div class="carousel-info">
+              <div class="carousel-title">Sunglasses</div>
+              <div class="carousel-price">$29.99</div>
+            </div>
+          </div>
+          <div class="carousel-item">
+            {% comment %} <img src="https://via.placeholder.com/300x300" alt="Item 2"> {% endcomment %}
+            <div class="carousel-info">
+              <div class="carousel-title">Beach Hat</div>
+              <div class="carousel-price">$19.99</div>
+            </div>
+          </div>
+          <div class="carousel-item">
+            {% comment %} <img src="https://via.placeholder.com/300x300" alt="Item 3"> {% endcomment %}
+            <div class="carousel-info">
+              <div class="carousel-title">Flip Flops</div>
+              <div class="carousel-price">$14.99</div>
+            </div>
+          </div>
+          <div class="carousel-item">
+            {% comment %} <img src="https://via.placeholder.com/300x300" alt="Item 4"> {% endcomment %}
+            <div class="carousel-info">
+              <div class="carousel-title">{{ section.settings.carousel }}</div>
+              <div class="carousel-price">$39.99</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {%  schema %}
+      {
+        "name":"Carousel",
+        "target":"section",
+        "settings":[
+            {
+            "type":"text",
+            "id":"carousel",
+            "label":"carousel",
+            "default":"rajajfnej"
+            }
+        ]
+    }
+
+      {%  endschema %}
+    
+    
