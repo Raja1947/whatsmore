@@ -56,4 +56,19 @@ model Banners{
   collectionId  String
   productId     String
 }
+model uploadedFile{
+  id       Int @id @default(autoincrement())
+  url      String
+  createdAt   DateTime @default(now())
+  selected    Boolean @default(false)
+  productLinks   ProductTimestamp[]
+}
 
+model ProductTimestamp {
+  id             Int          @id @default(autoincrement())
+  uploadedFile   uploadedFile  @relation(fields: [uploadedFileId], references: [id])
+  uploadedFileId Int
+
+  variantId      String         
+  timestamp      Int         
+}

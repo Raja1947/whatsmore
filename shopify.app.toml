@@ -1,9 +1,9 @@
 # Learn more about configuring your app at https://shopify.dev/docs/apps/tools/cli/configuration
 
-client_id = "6463924d6a37af4b2bf40ea2e2ea29fd"
+client_id = "7555fcaea25370b139dd60c3b471c7ac"
 name = "whats-more"
-handle = "whats-more"
-application_url = "https://challenge-cloud-handles-making.trycloudflare.com"
+handle = "whats-more-1"
+application_url = "https://historic-submission-correction-operational.trycloudflare.com"
 embedded = true
 
 [build]
@@ -13,23 +13,15 @@ automatically_update_urls_on_dev = true
 [webhooks]
 api_version = "2025-04"
 
-  [[webhooks.subscriptions]]
-  topics = [ "app/uninstalled" ]
-  uri = "/webhooks/app/uninstalled"
-
-  [[webhooks.subscriptions]]
-  topics = [ "app/scopes_update" ]
-  uri = "/webhooks/app/scopes_update"
-
 [access_scopes]
 # Learn more at https://shopify.dev/docs/apps/tools/cli/configuration#access_scopes
 scopes = "write_products"
 
 [auth]
 redirect_urls = [
-  "https://challenge-cloud-handles-making.trycloudflare.com/auth/callback",
-  "https://challenge-cloud-handles-making.trycloudflare.com/auth/shopify/callback",
-  "https://challenge-cloud-handles-making.trycloudflare.com/api/auth/callback"
+  "https://historic-submission-correction-operational.trycloudflare.com/auth/callback",
+  "https://historic-submission-correction-operational.trycloudflare.com/auth/shopify/callback",
+  "https://historic-submission-correction-operational.trycloudflare.com/api/auth/callback"
 ]
 
 [pos]
