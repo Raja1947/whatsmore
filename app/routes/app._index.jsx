@@ -1,12 +1,24 @@
-import { Form, json, useActionData, useLoaderData } from "@remix-run/react";
-import { useState } from "react";
+import {
+  Form,
+  json,
+  useActionData,
+  useLoaderData,
+  useSubmit,
+} from "@remix-run/react";
+import { useEffect, useState } from "react";
 import { Buffer } from "buffer";
-import ImageKit from "imagekit";
 import prisma from "../db.server";
-
-import { Button, Checkbox, FormLayout, TextField } from "@shopify/polaris";
+import ImageKit from "imagekit";
+import {
+  Button,
+  Checkbox,
+  FormLayout,
+  Modal,
+  TextField,
+} from "@shopify/polaris";
 import { useAppBridge } from "@shopify/app-bridge-react";
 
+// ======== LOADER ========y
 export async function loader() {
   const videos = await prisma.uploadedFile.findMany({
     orderBy: { createdAt: "desc" },
@@ -14,71 +26,225 @@ export async function loader() {
   return json({ videos });
 }
 
+// ======== TIMESTAMP HELPER ========
+function convertTimestampToSeconds(timestamp) {
+  const parts = timestamp.split(":").map(Number);
+  if (parts.length === 1) return parts[0];
+  if (parts.length === 2) return parts[0] * 60 + parts[1];
+  return 0;
+}
+
+// ======== ACTION ========
 export async function action({ request }) {
   try {
-    const imagekit = new ImageKit({
-      publicKey: "public_OxbyDHLl7mAo10apOvR70oHiGsU=",
-      privateKey: "private_u+N6B/ftta2yH17yHzryN2/qfDQ=",
-      urlEndpoint: "https://ik.imagekit.io/2d17j7ktvr",
-    });
-
     const form = await request.formData();
-    const file = form.get("file");
+    const intent = form.get("intent");
 
-    if (!file || typeof file === "string") {
-      throw new Error("No valid file uploaded");
+    if (intent === "upload") {
+      const imagekit = new ImageKit({
+        publicKey: "public_9e2hRHDZqguUtp1evFB99eHxA6g=",
+        privateKey: "private_fZyyOtu12Sq89lW7VTyCR2EUow8=",
+        urlEndpoint: "https://ik.imagekit.io/151189iyo",
+      });
+
+      const file = form.get("file");
+      if (!file || typeof file === "string") {
+        throw new Error("No valid file uploaded");
+      }
+
+      const arrayBuffer = await file.arrayBuffer();
+      const buffer = Buffer.from(arrayBuffer);
+
+      const result = await imagekit.upload({
+        file: buffer,
+        fileName: file.name,
+      });
+
+      const newVideo = await prisma.uploadedFile.create({
+        data: {
+          url: result.url,
+        },
+      });
+
+      return json({ newVideo });
     }
 
-    const arrayBuffer = await file.arrayBuffer();
-    const buffer = Buffer.from(arrayBuffer);
+    if (intent === "save-product") {
+      const variantIds = form.getAll("variantId");
+      const videoUrls = form.getAll("videoUrl");
+      const timestamps = form.getAll("timestamp");
+      const handles=form.getAll("handle")
 
-    const result = await imagekit.upload({
-      file: buffer,
-      fileName: file.name,
-    });
+      for (let i = 0; i < variantIds.length; i++) {
+        const variantId = variantIds[i];
+        const videoUrl = videoUrls[i];
+        const timestamp = timestamps[i];
+        const handle = handles[i];
 
-    const newVideo = await prisma.uploadedFile.create({
-      data: { url: result.url },
-    });
+        const uploadedFile = await prisma.uploadedFile.findUnique({
+          where: { url: videoUrl },
 
-    return json({ newVideo });
+        });
+        console.log(uploadedFile,'r')
+
+        if (!uploadedFile) {
+          throw new Error(`No video found for URL: ${videoUrl}`);
+        }
+
+        await prisma.selectedProduct.create({
+          data: {
+            variantId,
+            handle,
+            timestamp: convertTimestampToSeconds(timestamp),
+            uploadedFileId: uploadedFile.id,
+          },
+        });
+        await prisma.uploadedFile.update({
+          where: { id: uploadedFile.id },
+          data: { selected: true },
+        });
+      }
+
+      return json({ success: true });
+    }
+
+    return json({ error: "Invalid intent" }, { status: 400 });
   } catch (err) {
     console.error("Upload error:", err);
     return json({ error: err.message }, { status: 500 });
   }
 }
 
+// ======== COMPONENT ========
 export default function UploadPage() {
   const { videos } = useLoaderData();
   const actionData = useActionData();
-
-  const [isChecked, setIsChecked] = useState(false);
-  const [showForm, setShowForm] = useState(false);
-  const [productName, setProductName] = useState("");
-  const [variantProductId, setVariantProductId] = useState("");
   const app = useAppBridge();
+  const submit = useSubmit();
 
-  const handleOpenProduct = async () => {
-    const selected = await app.resourcePicker({ type: "variant" });
-    const variantId = selected.selection[0].id;
-    setVariantProductId(variantId);
+  const [uploadedVideos, setUploadedVideos] = useState(videos || []);
+  const [checkedVideos, setCheckedVideos] = useState({});
+  const [openModalId, setOpenModalId] = useState(null);
+  const [productTimestamps, setProductTimestamps] = useState({});
+  const [variantProducts, setVariantProducts] = useState({});
+  const [timestampErrors, setTimestampErrors] = useState({});
+
+  useEffect(() => {
+    if (actionData?.newVideo) {
+      setUploadedVideos((prev) => [...prev, actionData.newVideo]);
+    }
+  }, [actionData]);
+
+  const toggleCheckbox = (videoId) => {
+    setCheckedVideos((prev) => ({
+      ...prev,
+      [videoId]: !prev[videoId],
+    }));
   };
 
-  const allVideos = actionData?.newVideo
-    ? [actionData.newVideo, ...videos]
-    : videos;
+  const handleTimestampChange = (videoId, value) => {
+    const regex = /^(\d{1,2}:)?\d{1,2}$/;
+    if (value === "") {
+      setProductTimestamps((prev) => ({ ...prev, [videoId]: value }));
+      setTimestampErrors((prev) => ({ ...prev, [videoId]: "" }));
+      return;
+    }
+
+    if (!regex.test(value)) {
+      setTimestampErrors((prev) => ({
+        ...prev,
+        [videoId]: "Please enter time as mm:ss or ss",
+      }));
+      return;
+    }
+
+    setTimestampErrors((prev) => ({ ...prev, [videoId]: "" }));
+    setProductTimestamps((prev) => ({ ...prev, [videoId]: value }));
+  };
+
+  const formatTimestamp = (value) => {
+    if (!value) return "00:00";
+    const parts = value.split(":");
+    if (parts.length === 1) return `00:${parts[0].padStart(2, "0")}`;
+    if (parts.length === 2) return `${parts[0].padStart(2, "0")}:${parts[1].padStart(2, "0")}`;
+    return value;
+  };
+
+  const handleOpenProduct = async (videoId) => {
+    const selected = await app.resourcePicker({ type: "product" });
+    const variant = selected.selection[0];
+    if (!variant) return;
+    console.log(selected,'selecteddddddd')
+
+    const productData = {
+      id: variant.id,
+      title: variant.title,
+      image: variant.image?.originalSrc || "https://via.placeholder.com/100",
+      timestamp: formatTimestamp(productTimestamps[videoId] || "00:00"),
+      handle: variant.handle
+    };
+
+    setVariantProducts((prev) => {
+      const updated = { ...prev };
+      if (!updated[videoId]) updated[videoId] = [];
+      if (updated[videoId].length < 5) {
+        updated[videoId].push(productData);
+      }
+      return updated;
+    });
+
+    setOpenModalId(null);
+  };
+
+  const handleSave = () => {
+    const payload = [];
+
+    for (const video of uploadedVideos) {
+      const videoId = video.id;
+      const videoUrl = video.url;
+      const products = variantProducts[videoId] || [];
+    
+
+      products.forEach((product) => {
+        payload.push({
+          variantId: product.id,
+          videoUrl: videoUrl,
+          timestamp: product.timestamp,
+          handle:product.handle
+        });
+      });
+    }
+
+    const productData = new FormData();
+    payload.forEach((item) => {
+      productData.append("variantId", item.variantId);
+      productData.append("videoUrl", item.videoUrl);
+      productData.append("timestamp", item.timestamp);
+      productData.append("handle", item.handle)
+    });
+    productData.append("intent", "save-product");
+
+    submit(productData, { method: "post" });
+  };
 
   return (
     <div style={{ padding: "2rem" }}>
+      <div style={{ textAlign: "right", marginBottom: "1rem" }}>
+        <Button primary onClick={handleSave}>
+          Save
+        </Button>
+      </div>
+
       <h1>Upload Video</h1>
       <Form method="post" encType="multipart/form-data">
         <input type="file" name="file" accept="video/*" />
+        <input type="hidden" name="intent" value="upload" />
         <button type="submit" style={{ marginLeft: "1rem" }}>
           Upload
         </button>
       </Form>
 
-      {allVideos.length > 0 && (
+      {uploadedVideos.length > 0 && (
         <div style={{ marginTop: "2rem" }}>
           <h2>All Uploaded Videos</h2>
           <div
@@ -89,7 +255,7 @@ export default function UploadPage() {
               marginTop: "1rem",
             }}
           >
-            {allVideos.map((video) => (
+            {uploadedVideos.map((video) => (
               <div
                 key={video.id}
                 style={{
@@ -109,37 +275,75 @@ export default function UploadPage() {
 
                 <Checkbox
                   label="Select"
-                  checked={isChecked}
-                  onChange={() => setIsChecked(!isChecked)}
+                  checked={!!checkedVideos[video.id]}
+                  onChange={() => toggleCheckbox(video.id)}
                 />
 
-                {isChecked && (
-                  <Button fullWidth onClick={() => setShowForm(true)}>
+                {variantProducts[video.id] && (
+                  <div style={{ margin: "1rem 0", textAlign: "center" }}>
+                    {variantProducts[video.id].map((product, index) => (
+                      <div key={index} style={{ marginBottom: "1rem" }}>
+                        <img
+                          src={product.image}
+                          alt={product.title}
+                          style={{
+                            width: "80px",
+                            height: "80px",
+                            objectFit: "cover",
+                            borderRadius: "8px",
+                          }}
+                        />
+                        <p style={{ marginTop: "0.5rem", fontWeight: "500" }}>
+                          {product.title}
+                        </p>
+                        <p style={{ fontSize: "0.8rem", color: "#666" }}>
+                          Timestamp: {product.timestamp}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {checkedVideos[video.id] && (
+                  <Button
+                    fullWidth
+                    onClick={() => setOpenModalId(video.id)}
+                    disabled={variantProducts[video.id]?.length >= 5}
+                  >
                     Add Product
                   </Button>
                 )}
 
-                {showForm && (
-                  <div style={{ marginTop: "1rem" }}>
-                    <Form method="post">
-                      <FormLayout>
-                        <TextField
-                          label="Time Stamp"
-                          value={productName}
-                          onChange={(value) => setProductName(value)}
-                          required
-                        />
-                        <Button
-                          primary
-                          onClick={handleOpenProduct}
-                          style={{ marginTop: "1rem" }}
-                        >
-                          Save Product
-                        </Button>
-                      </FormLayout>
-                    </Form>
-                  </div>
-                )}
+                <Modal
+                  open={openModalId === video.id}
+                  onClose={() => setOpenModalId(null)}
+                  title="Add Product to Video"
+                  primaryAction={{
+                    content: "Save Product",
+                    onAction: () => handleOpenProduct(video.id),
+                  }}
+                  secondaryActions={[
+                    {
+                      content: "Cancel",
+                      onAction: () => setOpenModalId(null),
+                    },
+                  ]}
+                >
+                  <Modal.Section>
+                    <FormLayout>
+                      <TextField
+                        label="Timestamp (mm:ss or ss)"
+                        value={productTimestamps[video.id] || ""}
+                        onChange={(value) =>
+                          handleTimestampChange(video.id, value)
+                        }
+                        error={timestampErrors[video.id]}
+                        placeholder="mm:ss or ss"
+                        autoComplete="off"
+                      />
+                    </FormLayout>
+                  </Modal.Section>
+                </Modal>
               </div>
             ))}
           </div>

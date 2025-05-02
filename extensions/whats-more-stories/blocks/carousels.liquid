@@ -1,86 +1,92 @@
 {{ 'main.css' | asset_url | stylesheet_tag }}
 
+<style>
+  .carousel-container {
+    display: flex;
+    gap: 16px;
+    padding: 16px;
+    overflow-x: auto;
+    flex-wrap: nowrap;
+    -webkit-overflow-scrolling: touch;
+    margin-bottom: 16px;
+  }
 
+  .carousel-item {
+    position: relative;
+    display: inline-block;
+    width: 200px;
+    height: 150px;
+    background-color: #ddd;
+    border-radius: 8px;
+    overflow: hidden;
+    cursor: pointer;
+  }
 
+  .carousel-item video {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 8px;
+  }
 
-    <div class="carousel-wrapper">
-        <div class="carousel">
-          <!-- Repeat items (for infinite scroll feel) -->
-          <div class="carousel-item">
-            {% comment %} <img src="https://via.placeholder.com/300x300" alt="Item 1"> {% endcomment %}
-            <div class="carousel-info">
-              <div class="carousel-title">Sunglasses</div>
-              <div class="carousel-price">$29.99</div>
-            </div>
-          </div>
-          <div class="carousel-item">
-            {% comment %} <img src="https://via.placeholder.com/300x300" alt="Item 2"> {% endcomment %}
-            <div class="carousel-info">
-              <div class="carousel-title">Beach Hat</div>
-              <div class="carousel-price">$19.99</div>
-            </div>
-          </div>
-          <div class="carousel-item">
-            {% comment %} <img src="https://via.placeholder.com/300x300" alt="Item 3"> {% endcomment %}
-            <div class="carousel-info">
-              <div class="carousel-title">Flip Flops</div>
-              <div class="carousel-price">$14.99</div>
-            </div>
-          </div>
-          <div class="carousel-item">
-            {% comment %} <img src="https://via.placeholder.com/300x300" alt="Item 4"> {% endcomment %}
-            <div class="carousel-info">
-              <div class="carousel-title">Tropical Shirt</div>
-              <div class="carousel-price">$39.99</div>
-            </div>
-          </div>
-    
-          <!-- Repeat same items for smooth looping -->
-          <div class="carousel-item">
-            {% comment %} <img src="https://via.placeholder.com/300x300" alt="Item 1"> {% endcomment %}
-            <div class="carousel-info">
-              <div class="carousel-title">Sunglasses</div>
-              <div class="carousel-price">$29.99</div>
-            </div>
-          </div>
-          <div class="carousel-item">
-            {% comment %} <img src="https://via.placeholder.com/300x300" alt="Item 2"> {% endcomment %}
-            <div class="carousel-info">
-              <div class="carousel-title">Beach Hat</div>
-              <div class="carousel-price">$19.99</div>
-            </div>
-          </div>
-          <div class="carousel-item">
-            {% comment %} <img src="https://via.placeholder.com/300x300" alt="Item 3"> {% endcomment %}
-            <div class="carousel-info">
-              <div class="carousel-title">Flip Flops</div>
-              <div class="carousel-price">$14.99</div>
-            </div>
-          </div>
-          <div class="carousel-item">
-            {% comment %} <img src="https://via.placeholder.com/300x300" alt="Item 4"> {% endcomment %}
-            <div class="carousel-info">
-              <div class="carousel-title">{{ section.settings.carousel }}</div>
-              <div class="carousel-price">$39.99</div>
-            </div>
-          </div>
-        </div>
-      </div>
+  #loading-carousel {
+    color: #888;
+    font-size: 14px;
+  }
+</style>
 
-      {%  schema %}
-      {
-        "name":"Carousel",
-        "target":"section",
-        "settings":[
-            {
-            "type":"text",
-            "id":"carousel",
-            "label":"carousel",
-            "default":"rajajfnej"
-            }
-        ]
+<div class="carousel-container" id="carousel-container">
+  <p id="loading-carousel">Loading carousel...</p>
+</div>
+
+<script>
+  async function loadCarouselFromProxy() {
+    try {
+      const res = await fetch('https://mobiles-berry-patent-huge.trycloudflare.com/app/proxy');
+      const responseJson = await res.json();
+
+      console.log("Full response:", responseJson);
+
+      const items = Array.isArray(responseJson) ? responseJson : responseJson.data || [];
+      console.log("Items array:", items);
+
+      const container = document.getElementById('carousel-container');
+      document.getElementById('loading-carousel')?.remove();
+
+      if (items.length > 0) {
+        items.forEach((item) => {
+          const carouselDiv = document.createElement('div');
+          carouselDiv.className = 'carousel-item';
+
+          const video = document.createElement('video');
+          video.src = item.url; // Ensure that item.imageUrl is the correct image URL
+          video.controls=true;
+          carouselDiv.appendChild(video);
+          container.appendChild(carouselDiv);
+        });
+      } else {
+        container.innerHTML = '<p>No items found in carousel.</p>';
+      }
+    } catch (err) {
+      console.error("Failed to load carousel", err);
+      document.getElementById('carousel-container').innerHTML = '<p>Error loading carousel.</p>';
     }
+  }
 
-      {%  endschema %}
-    
-    
+  loadCarouselFromProxy();
+</script>
+
+{% schema %}
+{
+  "name": "Carousel",
+  "target": "section",
+  "settings": [
+    {
+      "type": "text",
+      "id": "heading",
+      "label": "Carousel Title",
+      "default": "Our Carousel"
+    }
+  ]
+}
+{% endschema %}
