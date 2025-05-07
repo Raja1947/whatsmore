@@ -18,20 +18,36 @@ import {
 } from "@shopify/polaris";
 import { useAppBridge } from "@shopify/app-bridge-react";
 
-// ======== LOADER ========y
+// ======== LOADER ========
 export async function loader() {
   const videos = await prisma.uploadedFile.findMany({
     orderBy: { createdAt: "desc" },
+    include: {
+      productLinks: {
+        orderBy: { timestamp: "asc" },
+      },
+    },
   });
   return json({ videos });
 }
 
 // ======== TIMESTAMP HELPER ========
 function convertTimestampToSeconds(timestamp) {
-  const parts = timestamp.split(":").map(Number);
+  if (!timestamp) return 0;
+  if (typeof timestamp === "number") return timestamp;
+
+  const parts = timestamp.toString().split(":").map(Number);
+  if (parts.some(isNaN)) return 0;
+
   if (parts.length === 1) return parts[0];
   if (parts.length === 2) return parts[0] * 60 + parts[1];
   return 0;
+}
+
+function formatDuration(seconds) {
+  const minutes = Math.floor(seconds / 60);
+  const remainingSeconds = Math.floor(seconds % 60);
+  return `${minutes.toString().padStart(2, "0")}:${remainingSeconds.toString().padStart(2, "0")}`;
 }
 
 // ======== ACTION ========
@@ -42,9 +58,9 @@ export async function action({ request }) {
 
     if (intent === "upload") {
       const imagekit = new ImageKit({
-        publicKey: "public_9e2hRHDZqguUtp1evFB99eHxA6g=",
-        privateKey: "private_fZyyOtu12Sq89lW7VTyCR2EUow8=",
-        urlEndpoint: "https://ik.imagekit.io/151189iyo",
+        publicKey: "public_OxbyDHLl7mAo10apOvR70oHiGsU=",
+        privateKey: "private_u+N6B/ftta2yH17yHzryN2/qfDQ=",
+        urlEndpoint: "https://ik.imagekit.io/2d17j7ktvr",
       });
 
       const file = form.get("file");
@@ -63,6 +79,7 @@ export async function action({ request }) {
       const newVideo = await prisma.uploadedFile.create({
         data: {
           url: result.url,
+          duration: result.duration,
         },
       });
 
@@ -70,35 +87,31 @@ export async function action({ request }) {
     }
 
     if (intent === "save-product") {
-      const variantIds = form.getAll("variantId");
-      const videoUrls = form.getAll("videoUrl");
-      const timestamps = form.getAll("timestamp");
-      const handles=form.getAll("handle")
+      const videoProducts = JSON.parse(form.get("videoProducts"));
 
-      for (let i = 0; i < variantIds.length; i++) {
-        const variantId = variantIds[i];
-        const videoUrl = videoUrls[i];
-        const timestamp = timestamps[i];
-        const handle = handles[i];
-
+      for (const { videoUrl, products } of videoProducts) {
         const uploadedFile = await prisma.uploadedFile.findUnique({
           where: { url: videoUrl },
-
+          include: { productLinks: true },
         });
-        console.log(uploadedFile,'r')
 
         if (!uploadedFile) {
           throw new Error(`No video found for URL: ${videoUrl}`);
         }
 
-        await prisma.selectedProduct.create({
-          data: {
-            variantId,
-            handle,
-            timestamp: convertTimestampToSeconds(timestamp),
-            uploadedFileId: uploadedFile.id,
-          },
-        });
+        // Add new products (up to 2)
+        for (let i = 0; i < Math.min(products.length, 2); i++) {
+          const product = products[i];
+          await prisma.selectedProduct.create({
+            data: {
+              variantId: product.variantId,
+              handle: product.handle,
+              timestamp: convertTimestampToSeconds(product.timestamp),
+              uploadedFileId: uploadedFile.id,
+            },
+          });
+        }
+
         await prisma.uploadedFile.update({
           where: { id: uploadedFile.id },
           data: { selected: true },
@@ -108,9 +121,17 @@ export async function action({ request }) {
       return json({ success: true });
     }
 
+    if (intent === "delete-product") {
+      const productId = Number(form.get("productId"));
+      await prisma.selectedProduct.delete({
+        where: { id: productId },
+      });
+      return json({ success: true });
+    }
+
     return json({ error: "Invalid intent" }, { status: 400 });
   } catch (err) {
-    console.error("Upload error:", err);
+    console.error("Action error:", err);
     return json({ error: err.message }, { status: 500 });
   }
 }
@@ -126,14 +147,33 @@ export default function UploadPage() {
   const [checkedVideos, setCheckedVideos] = useState({});
   const [openModalId, setOpenModalId] = useState(null);
   const [productTimestamps, setProductTimestamps] = useState({});
-  const [variantProducts, setVariantProducts] = useState({});
+  const [localProducts, setLocalProducts] = useState({});
   const [timestampErrors, setTimestampErrors] = useState({});
+  const [showSuccess, setShowSuccess] = useState(false);
+  const [deleteConfirm, setDeleteConfirm] = useState(null);
 
   useEffect(() => {
     if (actionData?.newVideo) {
       setUploadedVideos((prev) => [...prev, actionData.newVideo]);
     }
   }, [actionData]);
+
+  useEffect(() => {
+    if (actionData?.success) {
+      setShowSuccess(true);
+      setTimeout(() => setShowSuccess(false), 3000);
+    }
+  }, [actionData]);
+
+  function formatTimestamp(value) {
+    if (!value) return "00:00";
+    const numValue = typeof value === "number" ? value.toString() : value;
+    const parts = numValue.split(":");
+    if (parts.length === 1) return `00:${parts[0].padStart(2, "0")}`;
+    if (parts.length === 2)
+      return `${parts[0].padStart(2, "0")}:${parts[1].padStart(2, "0")}`;
+    return value;
+  }
 
   const toggleCheckbox = (videoId) => {
     setCheckedVideos((prev) => ({
@@ -143,7 +183,11 @@ export default function UploadPage() {
   };
 
   const handleTimestampChange = (videoId, value) => {
+    const video = uploadedVideos.find((v) => v.id === videoId);
+    const videoDuration = video?.duration || 0;
+
     const regex = /^(\d{1,2}:)?\d{1,2}$/;
+
     if (value === "") {
       setProductTimestamps((prev) => ({ ...prev, [videoId]: value }));
       setTimestampErrors((prev) => ({ ...prev, [videoId]: "" }));
@@ -158,197 +202,845 @@ export default function UploadPage() {
       return;
     }
 
+    const enteredSeconds = convertTimestampToSeconds(value);
+
+    if (enteredSeconds > videoDuration) {
+      setTimestampErrors((prev) => ({
+        ...prev,
+        [videoId]: `Timestamp cannot exceed video duration (${formatDuration(videoDuration)})`,
+      }));
+      return;
+    }
+
     setTimestampErrors((prev) => ({ ...prev, [videoId]: "" }));
     setProductTimestamps((prev) => ({ ...prev, [videoId]: value }));
   };
 
-  const formatTimestamp = (value) => {
-    if (!value) return "00:00";
-    const parts = value.split(":");
-    if (parts.length === 1) return `00:${parts[0].padStart(2, "0")}`;
-    if (parts.length === 2) return `${parts[0].padStart(2, "0")}:${parts[1].padStart(2, "0")}`;
-    return value;
-  };
-
   const handleOpenProduct = async (videoId) => {
+    const video = uploadedVideos.find((v) => v.id === videoId);
+
+    const dbProductCount = video?.productLinks?.length || 0;
+    const localProductCount = localProducts[videoId]?.length || 0;
+    const totalProducts = dbProductCount + localProductCount;
+
+    if (totalProducts >= 2) {
+      alert("This video already has the maximum of 2 products");
+      setOpenModalId(null);
+      return;
+    }
+
+    if (timestampErrors[videoId]) {
+      alert("Please fix the timestamp error before adding a product");
+      return;
+    }
+
     const selected = await app.resourcePicker({ type: "product" });
+    if (!selected || !selected.selection || selected.selection.length === 0)
+      return;
     const variant = selected.selection[0];
-    if (!variant) return;
-    console.log(selected,'selecteddddddd')
 
     const productData = {
       id: variant.id,
       title: variant.title,
       image: variant.image?.originalSrc || "https://via.placeholder.com/100",
       timestamp: formatTimestamp(productTimestamps[videoId] || "00:00"),
-      handle: variant.handle
+      handle: variant.handle,
     };
 
-    setVariantProducts((prev) => {
+    setLocalProducts((prev) => {
       const updated = { ...prev };
       if (!updated[videoId]) updated[videoId] = [];
-      if (updated[videoId].length < 5) {
-        updated[videoId].push(productData);
-      }
+      updated[videoId].push(productData);
       return updated;
     });
 
     setOpenModalId(null);
   };
 
+  const handleRemoveProduct = (videoId, index) => {
+    setLocalProducts((prev) => {
+      const updated = { ...prev };
+      if (updated[videoId]) {
+        updated[videoId] = updated[videoId].filter((_, i) => i !== index);
+        if (updated[videoId].length === 0) {
+          delete updated[videoId];
+        }
+      }
+      return updated;
+    });
+  };
+
+  const handleDeleteProduct = async (productId, videoId) => {
+    const formData = new FormData();
+    formData.append("intent", "delete-product");
+    formData.append("productId", productId);
+
+    await submit(formData, { method: "post" });
+
+    setUploadedVideos((prev) =>
+      prev.map((video) => {
+        if (video.id === videoId) {
+          return {
+            ...video,
+            productLinks: video.productLinks.filter((p) => p.id !== productId),
+          };
+        }
+        return video;
+      }),
+    );
+    setDeleteConfirm(null);
+  };
+
   const handleSave = () => {
-    const payload = [];
+    const videoProducts = [];
 
     for (const video of uploadedVideos) {
       const videoId = video.id;
-      const videoUrl = video.url;
-      const products = variantProducts[videoId] || [];
-    
+      const products = localProducts[videoId] || [];
 
-      products.forEach((product) => {
-        payload.push({
-          variantId: product.id,
-          videoUrl: videoUrl,
-          timestamp: product.timestamp,
-          handle:product.handle
+      if (products.length > 0) {
+        videoProducts.push({
+          videoUrl: video.url,
+          products: products.map((product) => ({
+            variantId: product.id,
+            timestamp: product.timestamp,
+            handle: product.handle,
+          })),
         });
-      });
+      }
     }
 
-    const productData = new FormData();
-    payload.forEach((item) => {
-      productData.append("variantId", item.variantId);
-      productData.append("videoUrl", item.videoUrl);
-      productData.append("timestamp", item.timestamp);
-      productData.append("handle", item.handle)
-    });
-    productData.append("intent", "save-product");
+    const formData = new FormData();
+    formData.append("intent", "save-product");
+    formData.append("videoProducts", JSON.stringify(videoProducts));
 
-    submit(productData, { method: "post" });
+    submit(formData, { method: "post" });
+    setCheckedVideos({});
+    setLocalProducts({});
+    setProductTimestamps({});
   };
 
   return (
-    <div style={{ padding: "2rem" }}>
-      <div style={{ textAlign: "right", marginBottom: "1rem" }}>
+    <div
+      style={{
+        padding: "2rem",
+        maxWidth: "1200px",
+        margin: "0 auto",
+        fontFamily: "'Inter', sans-serif",
+      }}
+    >
+      {/* Header Section */}
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          marginBottom: "2rem",
+          borderBottom: "1px solid #e2e8f0",
+          paddingBottom: "1.5rem",
+        }}
+      >
+        <h1
+          style={{
+            fontSize: "1.5rem",
+            fontWeight: "600",
+            color: "#1e293b",
+            margin: 0,
+          }}
+        >
+          Video Management
+        </h1>
         <Button primary onClick={handleSave}>
-          Save
+          Save Products
         </Button>
       </div>
 
-      <h1>Upload Video</h1>
-      <Form method="post" encType="multipart/form-data">
-        <input type="file" name="file" accept="video/*" />
-        <input type="hidden" name="intent" value="upload" />
-        <button type="submit" style={{ marginLeft: "1rem" }}>
-          Upload
-        </button>
-      </Form>
+      {/* Success Message */}
+      {showSuccess && (
+        <div
+          style={{
+            backgroundColor: "#f0fdf4",
+            color: "#166534",
+            padding: "1rem",
+            borderRadius: "8px",
+            marginBottom: "2rem",
+            display: "flex",
+            alignItems: "center",
+            gap: "0.5rem",
+            border: "1px solid #bbf7d0",
+          }}
+        >
+          <svg
+            width="20"
+            height="20"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="#166534"
+          >
+            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+            <polyline points="22 4 12 14.01 9 11.01"></polyline>
+          </svg>
+          Products saved successfully!
+        </div>
+      )}
 
-      {uploadedVideos.length > 0 && (
-        <div style={{ marginTop: "2rem" }}>
-          <h2>All Uploaded Videos</h2>
+      {/* Upload Section */}
+      <div
+        style={{
+          backgroundColor: "white",
+          borderRadius: "12px",
+          border: "1px solid lightgrey",
+          padding: "2rem",
+          boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
+          marginBottom: "3rem",
+        }}
+      >
+        <h2
+          style={{
+            fontSize: "1.4rem",
+            fontWeight: "500",
+            color: "#1e293b",
+            marginBottom: "1.5rem",
+          }}
+        >
+          Upload New Video
+        </h2>
+
+        <Form
+          method="post"
+          encType="multipart/form-data"
+          style={{ maxWidth: "600px", margin: "0 auto" }}
+        >
+          {/* Upload Area */}
+          <div
+            style={{
+              border: "2px dashed #e2e8f0",
+              borderRadius: "12px",
+              padding: "2rem 1rem",
+              textAlign: "center",
+              transition: "all 0.3s ease",
+              marginBottom: "2rem",
+              backgroundColor: "#f8fafc",
+              position: "relative",
+              ":hover": {
+                borderColor: "#818cf8",
+                backgroundColor: "#f1f5f9",
+              },
+            }}
+          >
+            <input
+              type="file"
+              name="file"
+              accept="video/*"
+              id="file-upload"
+              style={{
+                position: "absolute",
+                width: "100%",
+                height: "100%",
+                top: 0,
+                left: 0,
+                opacity: 0,
+                cursor: "pointer",
+              }}
+            />
+            <div
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                gap: "1.5rem",
+              }}
+            >
+              <div
+                style={{
+                  width: "64px",
+                  height: "64px",
+                  borderRadius: "50%",
+                  backgroundColor: "#e0e7ff",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                <svg
+                  width="28"
+                  height="28"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="#4f46e5"
+                  strokeWidth="2"
+                >
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                  <polyline points="17 8 12 3 7 8"></polyline>
+                  <line x1="12" y1="3" x2="12" y2="15"></line>
+                </svg>
+              </div>
+              <div
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: "0.5rem",
+                }}
+              >
+                <h3
+                  style={{
+                    fontSize: "1.25rem",
+                    fontWeight: "600",
+                    color: "#1e293b",
+                    margin: 0,
+                  }}
+                >
+                  Drag & drop your video
+                </h3>
+                <p
+                  style={{
+                    fontSize: "0.9375rem",
+                    color: "#64748b",
+                    margin: 0,
+                  }}
+                >
+                  or click to browse files
+                </p>
+              </div>
+            </div>
+          </div>
+
           <div
             style={{
               display: "flex",
-              flexWrap: "wrap",
-              gap: "2rem",
-              marginTop: "1rem",
+              justifyContent: "flex-end",
             }}
           >
-            {uploadedVideos.map((video) => (
-              <div
-                key={video.id}
-                style={{
-                  flex: "1 1 300px",
-                  maxWidth: "320px",
-                  border: "1px solid #ddd",
-                  borderRadius: "12px",
-                  padding: "1rem",
-                  boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
-                  backgroundColor: "#fff",
-                }}
+            <div>
+              <Button
+                type="submit"
+               
               >
-                <video width="100%" controls style={{ borderRadius: "8px" }}>
-                  <source src={video.url} type="video/mp4" />
-                  Your browser does not support the video tag.
-                </video>
+                Upload Video
+              </Button>
+            </div>
+          </div>
+        </Form>
+      </div>
 
-                <Checkbox
-                  label="Select"
-                  checked={!!checkedVideos[video.id]}
-                  onChange={() => toggleCheckbox(video.id)}
-                />
+      {/* Uploaded Videos Section */}
+      {uploadedVideos.length > 0 && (
+        <div
+          style={{
+            backgroundColor: "white",
+            borderRadius: "12px",
+            padding: "2rem",
+            border: "1px solid lightgrey",
+            boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
+          }}
+        >
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              marginBottom: "2rem",
+            }}
+          >
+            <h2
+              style={{
+                fontSize: "1.4rem",
+                fontWeight: "500",
+                color: "#1e293b",
+                margin: 0,
+              }}
+            >
+              Uploaded Videos
+            </h2>
+            <p
+              style={{
+                color: "#64748b",
+                fontSize: "0.9375rem",
+                margin: 0,
+              }}
+            >
+              {uploadedVideos.length} video
+              {uploadedVideos.length !== 1 ? "s" : ""}
+            </p>
+          </div>
 
-                {variantProducts[video.id] && (
-                  <div style={{ margin: "1rem 0", textAlign: "center" }}>
-                    {variantProducts[video.id].map((product, index) => (
-                      <div key={index} style={{ marginBottom: "1rem" }}>
-                        <img
-                          src={product.image}
-                          alt={product.title}
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))",
+              gap: "1.5rem",
+            }}
+          >
+            {uploadedVideos.map((video) => {
+              const dbProducts = video.productLinks || [];
+              const currentLocalProducts = localProducts[video.id] || [];
+              const allProducts = [...dbProducts, ...currentLocalProducts];
+              const totalProducts = allProducts.length;
+
+              return (
+                <div
+                  key={video.id}
+                  style={{
+                    border: "1px solid #e2e8f0",
+                    borderRadius: "12px",
+                    overflow: "hidden",
+                    boxShadow: "0 1px 3px rgba(0,0,0,0.05)",
+                    transition: "all 0.2s ease",
+                    ":hover": {
+                      transform: "translateY(-2px)",
+                      boxShadow: "0 4px 6px rgba(0,0,0,0.1)",
+                    },
+                  }}
+                >
+                  {/* Video Player */}
+                  <div style={{ position: "relative" }}>
+                    <video
+                      controls
+                      style={{
+                        width: "100%",
+                        height: "300px",
+                        objectFit: "cover",
+                        backgroundColor: "#f1f5f9",
+                      }}
+                    >
+                      <source src={video.url} type="video/mp4" />
+                    </video>
+                  </div>
+
+                  {/* Video Content */}
+                  <div style={{ padding: "1.25rem" }}>
+                    {/* Selection Toggle */}
+                    <div
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                        marginBottom: "1rem",
+                      }}
+                    >
+                      <label
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: "0.5rem",
+                          cursor: "pointer",
+                          userSelect: "none",
+                        }}
+                      >
+                        <Checkbox
+                          checked={!!checkedVideos[video.id]}
+                          onChange={() => toggleCheckbox(video.id)}
                           style={{
-                            width: "80px",
-                            height: "80px",
-                            objectFit: "cover",
-                            borderRadius: "8px",
+                            width: "18px",
+                            height: "18px",
+                            accentColor: "#4f46e5",
+                            cursor: "pointer",
                           }}
                         />
-                        <p style={{ marginTop: "0.5rem", fontWeight: "500" }}>
-                          {product.title}
-                        </p>
-                        <p style={{ fontSize: "0.8rem", color: "#666" }}>
-                          Timestamp: {product.timestamp}
+                        <span
+                          style={{
+                            fontWeight: "500",
+                            color: "#1e293b",
+                          }}
+                        >
+                          Select Products
+                        </span>
+                      </label>
+
+                      {checkedVideos[video.id] && (
+                        <button
+                          onClick={() => setOpenModalId(video.id)}
+                          disabled={totalProducts >= 2}
+                          style={{
+                            backgroundColor:
+                              totalProducts >= 2 ? "#e2e8f0" : "#e2e8f0",
+                            color: totalProducts >= 2 ? "#64748b" : "black",
+                            border: "none",
+                            borderRadius: "6px",
+                            padding: "0.375rem 0.75rem",
+                            fontSize: "0.8125rem",
+                            fontWeight: "500",
+                            cursor:
+                              totalProducts >= 2 ? "not-allowed" : "pointer",
+                            transition: "all 0.2s ease",
+                          }}
+                        >
+                          {totalProducts >= 2 ? "Max reached" : "+ Add Product"}
+                        </button>
+                      )}
+                    </div>
+
+                    {/* Products List */}
+                    {totalProducts > 0 ? (
+                      <div
+                        style={{
+                          borderTop: "1px solid #e2e8f0",
+                          paddingTop: "1rem",
+                        }}
+                      >
+                        <h4
+                          style={{
+                            fontSize: "0.875rem",
+                            fontWeight: "600",
+                            color: "#64748b",
+                            marginBottom: "0.75rem",
+                            textTransform: "uppercase",
+                            letterSpacing: "0.5px",
+                          }}
+                        >
+                          Linked Products ({totalProducts})
+                        </h4>
+
+                        <div
+                          style={{
+                            display: "flex",
+                            flexDirection: "column",
+                            gap: "0.75rem",
+                          }}
+                        >
+                          {allProducts.map((product, index) => {
+                            const isLocalProduct = index >= dbProducts.length;
+                            return (
+                              <div
+                                key={index}
+                                style={{
+                                  position: "relative",
+                                  display: "flex",
+                                  
+                                  gap: "0.75rem",
+                                  alignItems: "center",
+                                  padding: "0.75rem",
+                                  borderRadius: "8px",
+                                  backgroundColor: "#f8fafc",
+                                  border: "1px solid #e2e8f0",
+                                }}
+                              >
+                                <img
+                                  src={
+                                    isLocalProduct
+                                      ? product.image
+                                      : "https://via.placeholder.com/100"
+                                  }
+                                  alt={
+                                    isLocalProduct
+                                      ? product.title
+                                      : product.handle
+                                  }
+                                  style={{
+                                    width: "50px",
+                                    height: "50px",
+                                    objectFit: "cover",
+                                    borderRadius: "6px",
+                                    flexShrink: 0,
+                                  }}
+                                />
+                                <div style={{ flex: 1 }}>
+                                  <p
+                                    style={{
+                                      fontWeight: "500",
+                                      margin: 0,
+                                      fontSize: "0.875rem",
+                                    }}
+                                  >
+                                    {isLocalProduct
+                                      ? product.title
+                                      : product.handle}
+                                  </p>
+                                  <p
+                                    style={{
+                                      fontSize: "0.75rem",
+                                      color: "#64748b",
+                                      margin: "0.25rem 0 0",
+                                      display: "flex",
+                                      alignItems: "center",
+                                      gap: "0.25rem",
+                                    }}
+                                  >
+                                    <svg
+                                      width="12"
+                                      height="12"
+                                      viewBox="0 0 24 24"
+                                      fill="none"
+                                      stroke="#64748b"
+                                    >
+                                      <circle cx="12" cy="12" r="10"></circle>
+                                      <polyline points="12 6 12 12 16 14"></polyline>
+                                    </svg>
+                                    {formatTimestamp(product.timestamp)}
+                                  </p>
+                                </div>
+                                <button
+                                  onClick={() =>
+                                    isLocalProduct
+                                      ? handleRemoveProduct(
+                                          video.id,
+                                          index - dbProducts.length,
+                                        )
+                                      : setDeleteConfirm({
+                                          productId: product.id,
+                                          videoId: video.id,
+                                        })
+                                  }
+                                  style={{
+                                    background: "none",
+                                    border: "none",
+                                    color: "#ef4444",
+                                    cursor: "pointer",
+                                    padding: "0.25rem",
+                                    borderRadius: "4px",
+                                    ":hover": {
+                                      backgroundColor: "#fee2e2",
+                                    },
+                                  }}
+                                >
+                                  <svg
+                                    width="16"
+                                    height="16"
+                                    viewBox="0 0 24 24"
+                                    fill="none"
+                                    stroke="currentColor"
+                                  >
+                                    <polyline points="3 6 5 6 21 6"></polyline>
+                                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                                  </svg>
+                                </button>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    ) : (
+                      <div
+                        style={{
+                          textAlign: "center",
+                          padding: "1rem",
+                          backgroundColor: "#f8fafc",
+                          borderRadius: "8px",
+                          marginTop: "1rem",
+                        }}
+                      >
+                        <p
+                          style={{
+                            color: "#64748b",
+                            margin: 0,
+                            fontSize: "0.875rem",
+                          }}
+                        >
+                          No products linked to this video
                         </p>
                       </div>
-                    ))}
+                    )}
                   </div>
-                )}
-
-                {checkedVideos[video.id] && (
-                  <Button
-                    fullWidth
-                    onClick={() => setOpenModalId(video.id)}
-                    disabled={variantProducts[video.id]?.length >= 5}
-                  >
-                    Add Product
-                  </Button>
-                )}
-
-                <Modal
-                  open={openModalId === video.id}
-                  onClose={() => setOpenModalId(null)}
-                  title="Add Product to Video"
-                  primaryAction={{
-                    content: "Save Product",
-                    onAction: () => handleOpenProduct(video.id),
-                  }}
-                  secondaryActions={[
-                    {
-                      content: "Cancel",
-                      onAction: () => setOpenModalId(null),
-                    },
-                  ]}
-                >
-                  <Modal.Section>
-                    <FormLayout>
-                      <TextField
-                        label="Timestamp (mm:ss or ss)"
-                        value={productTimestamps[video.id] || ""}
-                        onChange={(value) =>
-                          handleTimestampChange(video.id, value)
-                        }
-                        error={timestampErrors[video.id]}
-                        placeholder="mm:ss or ss"
-                        autoComplete="off"
-                      />
-                    </FormLayout>
-                  </Modal.Section>
-                </Modal>
-              </div>
-            ))}
+                </div>
+              );
+            })}
           </div>
         </div>
       )}
+
+      {/* Modals */}
+      {uploadedVideos.map((video) => (
+        <div key={video.id}>
+          {/* Add Product Modal */}
+          <Modal
+            open={openModalId === video.id}
+            onClose={() => setOpenModalId(null)}
+            style={{
+              maxWidth: "500px",
+              borderRadius: "12px",
+              border: "none",
+              boxShadow: "0 10px 25px rgba(0,0,0,0.1)",
+            }}
+          >
+            <div style={{ padding: "1.5rem" }}>
+              <h3
+                style={{
+                  fontSize: "1.25rem",
+                  fontWeight: "600",
+                  color: "#1e293b",
+                  marginBottom: "1.5rem",
+                }}
+              >
+                Add Product to Video
+              </h3>
+
+              <div style={{ marginBottom: "1.5rem" }}>
+                <p
+                  style={{
+                    color: "#64748b",
+                    marginBottom: "0.5rem",
+                    fontSize: "0.875rem",
+                  }}
+                >
+                  Video duration:{" "}
+                  <strong>{formatDuration(video.duration)}</strong>
+                </p>
+
+                <label
+                  style={{
+                    display: "block",
+                    marginBottom: "0.5rem",
+                    fontWeight: "500",
+                    color: "#334155",
+                    fontSize: "0.875rem",
+                  }}
+                >
+                  Timestamp
+                </label>
+                <TextField
+                  value={productTimestamps[video.id] || ""}
+                  onChange={(e) =>
+                    handleTimestampChange(video.id, e.target.value)
+                  }
+                  placeholder="mm:ss or ss"
+                  style={{
+                    width: "100%",
+                    padding: "0.75rem",
+                    border: `1px solid ${timestampErrors[video.id] ? "#ef4444" : "#e2e8f0"}`,
+                    borderRadius: "8px",
+                    fontSize: "0.9375rem",
+                    ":focus": {
+                      outline: "none",
+
+                      boxShadow: "0 0 0 3px rgba(129, 140, 248, 0.2)",
+                    },
+                  }}
+                />
+                {timestampErrors[video.id] && (
+                  <p
+                    style={{
+                      color: "#ef4444",
+                      fontSize: "0.75rem",
+                      marginTop: "0.25rem",
+                    }}
+                  >
+                    {timestampErrors[video.id]}
+                  </p>
+                )}
+              </div>
+
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "flex-end",
+                  gap: "0.75rem",
+                }}
+              >
+                <button
+                  onClick={() => setOpenModalId(null)}
+                  style={{
+                    padding: "0.4rem 1rem",
+                    backgroundColor: "transparent",
+                    color: "black",
+                    border: "1px solid #e2e8f0",
+                    borderRadius: "8px",
+                    fontWeight: "500",
+                    cursor: "pointer",
+                    transition: "all 0.2s ease",
+                  }}
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={() => handleOpenProduct(video.id)}
+                  style={{
+                    padding: "0.4rem 1rem",
+                    backgroundColor: "#e2e8f0",
+                    color: "black",
+                    border: "none",
+                    borderRadius: "8px",
+                    fontWeight: "500",
+                    cursor: "pointer",
+                    transition: "all 0.2s ease",
+                  }}
+                >
+                  Save Product
+                </button>
+              </div>
+            </div>
+          </Modal>
+
+          {/* Delete Confirmation Modal */}
+          <Modal
+            open={deleteConfirm?.videoId === video.id}
+            onClose={() => setDeleteConfirm(null)}
+            style={{
+              maxWidth: "400px",
+              borderRadius: "12px",
+              border: "none",
+              boxShadow: "0 10px 25px rgba(0,0,0,0.1)",
+            }}
+          >
+            <div style={{ padding: "2.5rem", textAlign: "center" }}>
+              <h3
+                style={{
+                  fontSize: "1.25rem",
+                  fontWeight: "600",
+                  color: "#1e293b",
+                  marginBottom: "0.5rem",
+                }}
+              >
+                Confirm Deletion
+              </h3>
+              <p
+                style={{
+                  color: "#64748b",
+                  marginBottom: "1.5rem",
+                }}
+              >
+                Are you sure you want to delete this product permanently?
+              </p>
+
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "center",
+                  gap: "0.75rem",
+                }}
+              >
+                <button
+                  onClick={() => setDeleteConfirm(null)}
+                  style={{
+                    padding: "0.4rem 1rem",
+                    backgroundColor: "transparent",
+                    color: "#64748b",
+                    border: "1px solid #e2e8f0",
+                    borderRadius: "8px",
+                    fontWeight: "500",
+                    cursor: "pointer",
+                    transition: "all 0.2s ease",
+                    ":hover": {
+                      backgroundColor: "#f1f5f9",
+                    },
+                  }}
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={() =>
+                    handleDeleteProduct(deleteConfirm.productId, video.id)
+                  }
+                  style={{
+                    padding: "0.4rem 1rem",
+                    backgroundColor: "#ef4444",
+                    color: "white",
+                    border: "none",
+                    borderRadius: "8px",
+                    fontWeight: "500",
+                    cursor: "pointer",
+                    transition: "all 0.2s ease",
+                    ":hover": {
+                      backgroundColor: "#dc2626",
+                    },
+                  }}
+                >
+                  Delete
+                </button>
+              </div>
+            </div>
+          </Modal>
+        </div>
+      ))}
     </div>
   );
 }

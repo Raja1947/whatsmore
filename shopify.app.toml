@@ -3,7 +3,7 @@
 client_id = "7555fcaea25370b139dd60c3b471c7ac"
 name = "whats-more"
 handle = "whats-more-1"
-application_url = "https://impression-steps-belongs-deleted.trycloudflare.com"
+application_url = "https://warehouse-mode-nam-oral.trycloudflare.com"
 embedded = true
 
 [build]
@@ -19,13 +19,13 @@ scopes = "write_products"
 
 [auth]
 redirect_urls = [
-  "https://impression-steps-belongs-deleted.trycloudflare.com/auth/callback",
-  "https://impression-steps-belongs-deleted.trycloudflare.com/auth/shopify/callback",
-  "https://impression-steps-belongs-deleted.trycloudflare.com/api/auth/callback"
+  "https://warehouse-mode-nam-oral.trycloudflare.com/auth/callback",
+  "https://warehouse-mode-nam-oral.trycloudflare.com/auth/shopify/callback",
+  "https://warehouse-mode-nam-oral.trycloudflare.com/api/auth/callback"
 ]
 
 [app_proxy]
-url = "https://impression-steps-belongs-deleted.trycloudflare.com/app/proxy"
+url = "https://warehouse-mode-nam-oral.trycloudflare.com/app/proxy"
 subpath = "whatsmore"
 prefix = "apps"
 

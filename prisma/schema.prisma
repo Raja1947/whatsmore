@@ -62,6 +62,7 @@ model uploadedFile{
   createdAt   DateTime @default(now())
   selected    Boolean @default(false)
   productLinks   SelectedProduct[]
+  duration  Int
 }
 
 model SelectedProduct {

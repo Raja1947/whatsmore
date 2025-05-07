@@ -1,8 +1,7 @@
-{{ 'main.css' | asset_url | stylesheet_tag }}
-
 <style>
   .stories-container {
-    display: flex;
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
     gap: 16px;
     padding: 16px;
     overflow-x: auto;
@@ -15,19 +14,18 @@
     display: flex;
     flex-direction: column;
     align-items: center;
+    justify-content: space-between;
     gap: 10px;
-    width: 150px;
     flex-shrink: 0;
   }
 
   .story-video {
-    width: 120px;
-    height: 120px;
-    border-radius: 50%;
+    aspect-ratio: 4/5;
     overflow: hidden;
     background-color: #ddd;
-    position: relative;
+    position: relative; 
     cursor: pointer;
+    width: 100%;
   }
 
   .story-video video {
@@ -37,30 +35,54 @@
   }
 
   .product-info {
+    position: absolute;
+    bottom: 0;
     width: 100%;
     text-align: center;
-    padding: 10px;
-    background: #f9f9f9;
-    border-radius: 8px;
+    padding: 3px;
+    background:#cec7c7b8;
+    border-radius: 0 0 8px 8px;
     display: none;
+    z-index: 10;
+    transition: opacity 0.3s ease;
   }
 
   .product-info.visible {
     display: block;
+    opacity: 1;
   }
 
   .product-info img {
-    width: 60px;
-    height: 60px;
+    width: 70px;
+    height: 70px;
     object-fit: cover;
-    border-radius: 4px;
-    margin-bottom: 8px;
     cursor: pointer;
   }
 
   #loading-text {
     color: #888;
-    font-size: 14px;
+    font-size: 13px;
+  }
+
+  .product-item {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+  }
+
+  .product-item img {
+    flex-basis: 30%;
+  }
+
+  .product-item div {
+    flex-basis: 65%;
+  }
+  .info-price{
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    gap:10px;
   }
 </style>
 
@@ -71,7 +93,7 @@
 <script>
   async function loadStoriesFromProxy() {
     try {
-      const res = await fetch('https://impression-steps-belongs-deleted.trycloudflare.com/app/proxy');
+      const res = await fetch('https://warehouse-mode-nam-oral.trycloudflare.com/app/proxy');
       const responseJson = await res.json();
       console.log('API Response:', responseJson);
 
@@ -84,72 +106,152 @@
           const storyItem = document.createElement('div');
           storyItem.className = 'story-item';
 
-          // Video container
           const videoContainer = document.createElement('div');
           videoContainer.className = 'story-video';
 
           const video = document.createElement('video');
           video.src = item.url;
           video.autoplay = true;
-          video.loop = true;
+          video.loop = false;
           video.muted = true;
           video.playsInline = true;
 
-          videoContainer.appendChild(video);
-          storyItem.appendChild(videoContainer);
-
-          // Product info container
           const productInfo = document.createElement('div');
           productInfo.className = 'product-info';
-          storyItem.appendChild(productInfo);
+          videoContainer.appendChild(productInfo);
 
-          // Click handler for video
-          videoContainer.addEventListener('click', async () => {
-            const isVisible = productInfo.classList.contains('visible');
-            document.querySelectorAll('.product-info').forEach((el) => el.classList.remove('visible'));
+          // Store product data and timestamps
+          let productsData = [];
+          let currentProductIndex = -1;
+          let productVisibleTimeout = null;
 
-            if (!isVisible && item.productLinks && item.productLinks.length > 0) {
+          if (item.productLinks && item.productLinks.length > 0) {
+            // Load product data
+            const productPromises = item.productLinks.map(async (link) => {
               try {
-                // Show loading state
-                productInfo.innerHTML = '<p>Loading products...</p>';
+                const product = await fetchProductByHandle(link.handle);
+                return {
+                  ...product,
+                  timestamp: link.timestamp,
+                  duration: 3// Show each product for 5 seconds by default
+                };
+              } catch (e) {
+                console.error(`Error loading product ${link.handle}:`, e);
+                return null;
+              }
+            });
+
+            productsData = (await Promise.all(productPromises)).filter(Boolean);
+            productsData.sort((a, b) => a.timestamp - b.timestamp); // Sort by timestamp
+            
+            // Set up timeupdate listener
+            video.addEventListener('timeupdate', () => {
+              const currentTime = video.currentTime;
+              let showIndex = -1; //means no product to show
+              
+              // Find which product should be shown based on current time
+              for (let i = 0; i < productsData.length; i++) {
+                if (currentTime >= productsData[i].timestamp && 
+                    currentTime < (productsData[i].timestamp + productsData[i].duration)) {
+                  showIndex = i;
+                  break;
+                }
+              }
+              
+              // If we found a product to show and it's different from current one
+              if (showIndex !== -1 && showIndex !== currentProductIndex) {
+                currentProductIndex = showIndex;
+                const product = productsData[showIndex];
+                
+                productInfo.innerHTML = `
+                  <div class="product-item" style="margin-bottom: 10px;">
+                    <img src="${product.featured_image}" alt="${product.title}" 
+                         data-product-url="${product.url}" />
+                    <div>
+                      <p style="margin: 5px 0 0;"><strong>${product.title}</strong></p>
+                      <div class="info-price">
+                        <p style="margin: 0 0 5px;">$${product.price}</p>
+                        <button class="add-to-cart-btn" 
+                                data-variant-id="${product.variantId}" 
+                                style="padding: 6px 10px; background: black; color: white; border: none; cursor: pointer; border-radius: 4px;">
+                          Add to Cart
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                `;
+                
                 productInfo.classList.add('visible');
                 
-                // Fetch all products
-                const productPromises = item.productLinks.map(link => 
-                  fetchProductByHandle(link.handle).catch(e => {
-                    console.error(`Error loading product ${link.handle}:`, e);
-                    return null;
-                  })
-                );
-                
-                const products = (await Promise.all(productPromises)).filter(Boolean);
-                
-                if (products.length > 0) {
-                  productInfo.innerHTML = products.map(product => `
-                    <div class="product-item" style="margin-bottom: 10px;">
-                      <img src="${product.featured_image}" alt="${product.title}" 
-                           data-product-url="${product.url}" style="cursor: pointer;">
-                    
-                    </div>
-                  `).join('');
-                  
-                  //add click handler on product to show product details
-                  productInfo.querySelectorAll('img').forEach(img => {
-                    img.addEventListener('click', (e) => {
-                      e.stopPropagation(); 
-                      window.location.href = e.target.dataset.productUrl;
-                    });
-                  });
-                } else {
-                  productInfo.innerHTML = '<p>No products available</p>';
+                // Clear any previous timeout
+                if (productVisibleTimeout) {
+                  clearTimeout(productVisibleTimeout);
                 }
-              } catch (e) {
-                console.error('Error loading products:', e);
-                productInfo.innerHTML = '<p>Error loading products</p>';
+                
+                // Set timeout to hide the product after its duration
+                productVisibleTimeout = setTimeout(() => {
+                  productInfo.classList.remove('visible');
+                  currentProductIndex = -1;
+                }, productsData[showIndex].duration * 1000);
+                
+                // Set up event listeners for the new elements
+                productInfo.querySelector('img').addEventListener('click', (e) => {
+                  e.stopPropagation();
+                  window.location.href = e.target.dataset.productUrl;
+                });
+                
+                productInfo.querySelector('.add-to-cart-btn').addEventListener('click', async (e) => {
+                  e.stopPropagation();
+                  const variantId = e.target.dataset.variantId;
+                  try {
+                    const res = await fetch('/cart/add', {
+                      method: 'POST',
+                      headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                      },
+                      body: JSON.stringify({
+                        items: [
+                          {
+                            id: variantId,
+                            quantity: 1,
+                          },
+                        ],
+                      }),
+                    });
+                    const result = await res.json();
+                    console.log('Added to cart:', result);
+                    e.target.innerText = 'Added!';
+                    setTimeout(() => (e.target.innerText = 'Add to Cart'), 2000);
+                  } catch (err) {
+                    console.error('Error adding to cart:', err);
+                    e.target.innerText = 'Error!';
+                  }
+                });
+              } else if (showIndex === -1 && currentProductIndex !== -1) {
+                // Hide product info if we passed all timestamps
+                currentProductIndex = -1;
+                productInfo.classList.remove('visible');
+                if (productVisibleTimeout) {
+                  clearTimeout(productVisibleTimeout);
+                  productVisibleTimeout = null;
+                }
               }
+            });
+          }
+
+          // When video ends, hide any visible product
+          video.addEventListener('ended', () => {
+            productInfo.classList.remove('visible');
+            currentProductIndex = -1;
+            if (productVisibleTimeout) {
+              clearTimeout(productVisibleTimeout);
+              productVisibleTimeout = null;
             }
           });
 
+          videoContainer.appendChild(video);
+          storyItem.appendChild(videoContainer);
           container.appendChild(storyItem);
         }
       } else {
@@ -166,10 +268,15 @@
       const response = await fetch(`/products/${handle}.js`);
       if (!response.ok) throw new Error('Product not found');
       const product = await response.json();
+
+      const firstVariant = product.variants?.[0];
+
       return {
         title: product.title,
         featured_image: product.featured_image || '',
-        url: `/products/${handle}`
+        url: `/products/${handle}`,
+        price: (firstVariant?.price / 100).toFixed(2),
+        variantId: firstVariant?.id,
       };
     } catch (error) {
       console.error(`Error fetching product ${handle}:`, error);
@@ -177,7 +284,6 @@
     }
   }
 
-  // Initialize when DOM is ready
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', loadStoriesFromProxy);
   } else {
