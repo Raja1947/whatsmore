@@ -23,15 +23,17 @@
     aspect-ratio: 4/5;
     overflow: hidden;
     background-color: #ddd;
-    position: relative; 
+    position: relative;
     cursor: pointer;
     width: 100%;
+    border-radius: 8px;
   }
 
   .story-video video {
     width: 100%;
     height: 100%;
     object-fit: cover;
+    border-radius: 8px;
   }
 
   .product-info {
@@ -40,7 +42,7 @@
     width: 100%;
     text-align: center;
     padding: 3px;
-    background:#cec7c7b8;
+    background: #cec7c7b8;
     border-radius: 0 0 8px 8px;
     display: none;
     z-index: 10;
@@ -57,6 +59,7 @@
     height: 70px;
     object-fit: cover;
     cursor: pointer;
+    border-radius: 4px;
   }
 
   #loading-text {
@@ -78,11 +81,267 @@
   .product-item div {
     flex-basis: 65%;
   }
-  .info-price{
-    display:flex;
-    justify-content:center;
-    align-items:center;
-    gap:10px;
+
+  .info-price {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 10px;
+  }
+
+  /* Modal styles */
+  .video-modal {
+    display: none;
+    position: fixed;
+    inset: 0;
+    z-index: 1000;
+    overflow: hidden;
+    width: 70%;
+    height: 442px;
+    margin: auto;
+    border: 1px solid #e0e0e0;
+    border-radius: 10px;
+  }
+
+  /* Backdrop effect */
+  .modal-backdrop {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.7);
+    z-index: 999;
+    backdrop-filter: blur(5px);
+  }
+
+  .modal-content {
+    display: flex;
+    height: 100%;
+    width: 100%;
+
+    background: white;
+  }
+
+  .modal-video-container {
+    flex-basis: 40%;
+    display: flex;
+    background: #f5f5f5;
+    position: relative;
+    flex-direction: column;
+  }
+
+  .modal-video {
+    width: 100%;
+    height: calc(100% - 40px);
+    object-fit: cover;
+  }
+
+  .modal-products-container {
+    flex-basis: 60%;
+    overflow-y: scroll;
+    display: flex;
+    flex-direction: column;
+    background: white;
+    padding: 15px;
+  }
+
+  .close-modal {
+    position: absolute;
+    top: 20px;
+    right: 30px;
+    color: #666;
+    font-size: 28px;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    background: rgba(255, 255, 255, 0.8);
+    z-index: 1001;
+  }
+
+  .close-modal:hover {
+    color: #333;
+    background: rgba(255, 255, 255, 0.9);
+  }
+
+  .product-details {
+    background: white;
+
+    margin-bottom: 20px;
+  }
+
+  .product-details:last-child {
+    border-bottom: none;
+    margin-bottom: 0;
+  }
+
+  .product-details h3 {
+    font-size: 20px;
+    margin: 0 0 10px;
+    color: #333;
+  }
+
+  .product-details img {
+    width: 100%;
+    max-height: 200px;
+    object-fit: cover;
+
+    margin-bottom: 10px;
+  }
+
+  .product-price {
+    font-size: 18px;
+    font-weight: bold;
+    color: #444;
+    margin-bottom: 10px;
+  }
+
+  .product-description {
+    color: #666;
+    line-height: 1.6;
+    font-size: 14px;
+    margin-bottom: 15px;
+  }
+
+  .add-to-cart-btn {
+    background: #f0f0f0;
+    color: #333;
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+  }
+
+  .add-to-cart-btn:hover {
+    background: #e0e0e0;
+    border-color: #ccc;
+  }
+
+  .product-gallery {
+    display: flex;
+    gap: 10px;
+    overflow-x: auto;
+    margin-top: 10px;
+    padding-bottom: 5px;
+  }
+
+  .product-gallery img {
+    width: 60px;
+    height: 60px;
+    object-fit: cover;
+    border-radius: 4px;
+    cursor: pointer;
+    border: 1px solid #eee;
+    transition: all 0.2s;
+  }
+
+  .product-gallery img:hover {
+    border-color: #ccc;
+    transform: scale(1.05);
+  }
+
+  /* Custom video controls */
+  .video-controls {
+    height: 40px;
+    background: rgba(0, 0, 0, 0.7);
+    display: flex;
+    align-items: center;
+    padding: 0 10px;
+    position: relative;
+  }
+
+  .progress-container {
+    flex-grow: 1;
+    height: 4px;
+    background: rgba(255, 255, 255, 0.3);
+    margin: 0 10px;
+    border-radius: 2px;
+    cursor: pointer;
+  }
+
+  .progress-bar {
+    height: 100%;
+    background: #fff;
+    border-radius: 2px;
+    width: 0%;
+    position: relative;
+  }
+
+  .mute-btn {
+    color: white;
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 16px;
+    padding: 5px;
+  }
+
+  /* Play/Pause overlay */
+  .play-pause-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: calc(100% - 40px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    pointer-events: none;
+    z-index: 10;
+  }
+
+  .play-pause-overlay.visible {
+    opacity: 1;
+  }
+
+  .play-pause-icon svg {
+    font-size: 5px;
+    color: white;
+    background: rgba(0, 0, 0, 0.5);
+    border-radius: 50%;
+    width: 60px;
+    height: 60px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  @media (max-width: 1024px) {
+    .video-modal {
+      width: 90%;
+    }
+
+    .modal-content {
+      flex-direction: column;
+    }
+
+    .modal-video-container {
+      width: 100%;
+      flex-basis: auto;
+    }
+
+    .modal-products-container {
+      width: 100%;
+      flex-basis: auto;
+    }
+
+    .close-modal {
+      top: 10px;
+      right: 10px;
+      width: 30px;
+      height: 30px;
+      font-size: 20px;
+    }
   }
 </style>
 
@@ -90,10 +349,40 @@
   <p id="loading-text">Loading stories...</p>
 </div>
 
+<!-- Modal Backdrop -->
+<div class="modal-backdrop" id="modalBackdrop"></div>
+
+<!-- Modal Structure -->
+<div class="video-modal" id="videoModal">
+  <span class="close-modal">&times;</span>
+  <div class="modal-content">
+    <div class="modal-video-container">
+      <video class="modal-video"></video>
+      <div class="play-pause-overlay">
+        <div class="play-pause-icon">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6">
+  <path stroke-linecap="round" stroke-linejoin="round" d="M5.25 5.653c0-.856.917-1.398 1.667-.986l11.54 6.347a1.125 1.125 0 0 1 0 1.972l-11.54 6.347a1.125 1.125 0 0 1-1.667-.986V5.653Z" />
+</svg>
+{% comment %} //play-icon {% endcomment %}
+        </div>
+      </div>
+      <div class="video-controls">
+        <button class="mute-btn">🔊</button>
+        <div class="progress-container">
+          <div class="progress-bar"></div>
+        </div>
+      </div>
+    </div>
+    <div class="modal-products-container" id="modalProducts">
+      <!-- Product details will be loaded here -->
+    </div>
+  </div>
+</div>
+
 <script>
   async function loadStoriesFromProxy() {
     try {
-      const res = await fetch('https://warehouse-mode-nam-oral.trycloudflare.com/app/proxy');
+      const res = await fetch('https://campbell-bangladesh-passed-turn.trycloudflare.com/app/proxy');
       const responseJson = await res.json();
       console.log('API Response:', responseJson);
 
@@ -133,7 +422,7 @@
                 return {
                   ...product,
                   timestamp: link.timestamp,
-                  duration: 3// Show each product for 5 seconds by default
+                  duration: 3, // Show each product for 3 seconds by default
                 };
               } catch (e) {
                 console.error(`Error loading product ${link.handle}:`, e);
@@ -143,26 +432,28 @@
 
             productsData = (await Promise.all(productPromises)).filter(Boolean);
             productsData.sort((a, b) => a.timestamp - b.timestamp); // Sort by timestamp
-            
+
             // Set up timeupdate listener
             video.addEventListener('timeupdate', () => {
               const currentTime = video.currentTime;
               let showIndex = -1; //means no product to show
-              
+
               // Find which product should be shown based on current time
               for (let i = 0; i < productsData.length; i++) {
-                if (currentTime >= productsData[i].timestamp && 
-                    currentTime < (productsData[i].timestamp + productsData[i].duration)) {
+                if (
+                  currentTime >= productsData[i].timestamp &&
+                  currentTime < productsData[i].timestamp + productsData[i].duration
+                ) {
                   showIndex = i;
                   break;
                 }
               }
-              
+
               // If we found a product to show and it's different from current one
               if (showIndex !== -1 && showIndex !== currentProductIndex) {
                 currentProductIndex = showIndex;
                 const product = productsData[showIndex];
-                
+
                 productInfo.innerHTML = `
                   <div class="product-item" style="margin-bottom: 10px;">
                     <img src="${product.featured_image}" alt="${product.title}" 
@@ -173,33 +464,33 @@
                         <p style="margin: 0 0 5px;">$${product.price}</p>
                         <button class="add-to-cart-btn" 
                                 data-variant-id="${product.variantId}" 
-                                style="padding: 6px 10px; background: black; color: white; border: none; cursor: pointer; border-radius: 4px;">
+                                style="padding: 6px 10px; background: #f0f0f0; color: #333; border: 1px solid #ddd; cursor: pointer; border-radius: 4px;">
                           Add to Cart
                         </button>
                       </div>
                     </div>
                   </div>
                 `;
-                
+
                 productInfo.classList.add('visible');
-                
+
                 // Clear any previous timeout
                 if (productVisibleTimeout) {
                   clearTimeout(productVisibleTimeout);
                 }
-                
+
                 // Set timeout to hide the product after its duration
                 productVisibleTimeout = setTimeout(() => {
                   productInfo.classList.remove('visible');
                   currentProductIndex = -1;
                 }, productsData[showIndex].duration * 1000);
-                
+
                 // Set up event listeners for the new elements
                 productInfo.querySelector('img').addEventListener('click', (e) => {
                   e.stopPropagation();
                   window.location.href = e.target.dataset.productUrl;
                 });
-                
+
                 productInfo.querySelector('.add-to-cart-btn').addEventListener('click', async (e) => {
                   e.stopPropagation();
                   const variantId = e.target.dataset.variantId;
@@ -208,7 +499,7 @@
                       method: 'POST',
                       headers: {
                         'Content-Type': 'application/json',
-                        'Accept': 'application/json',
+                        Accept: 'application/json',
                       },
                       body: JSON.stringify({
                         items: [
@@ -250,6 +541,11 @@
             }
           });
 
+          // Add click event to open modal
+          videoContainer.addEventListener('click', () => {
+            openModal(item.url, productsData);
+          });
+
           videoContainer.appendChild(video);
           storyItem.appendChild(videoContainer);
           container.appendChild(storyItem);
@@ -277,12 +573,210 @@
         url: `/products/${handle}`,
         price: (firstVariant?.price / 100).toFixed(2),
         variantId: firstVariant?.id,
+        description: product.description,
+        images: product.images || [],
+        handle: handle,
       };
     } catch (error) {
       console.error(`Error fetching product ${handle}:`, error);
       throw error;
     }
   }
+
+  // Modal functions
+  function openModal(videoUrl, productsData) {
+    const modal = document.getElementById('videoModal');
+    const backdrop = document.getElementById('modalBackdrop');
+    const modalVideo = modal.querySelector('.modal-video');
+    const modalProducts = document.getElementById('modalProducts');
+    const progressBar = modal.querySelector('.progress-bar');
+    const muteBtn = modal.querySelector('.mute-btn');
+    const progressContainer = modal.querySelector('.progress-container');
+    const playPauseOverlay = modal.querySelector('.play-pause-overlay');
+    const playPauseIcon = modal.querySelector('.play-pause-icon');
+
+    // Show backdrop
+    backdrop.style.display = 'block';
+
+    // Set video source
+    modalVideo.src = videoUrl;
+    modalVideo.muted = true; 
+    modalVideo.controls = false; 
+
+    // Load product details
+    modalProducts.innerHTML = '';
+
+    if (productsData && productsData.length > 0) {
+      // Create product elements for each product
+      productsData.forEach((product) => {
+        const productElement = document.createElement('div');
+        productElement.className = 'product-details';
+
+        // Create gallery of product images
+        let galleryHTML = '';
+        if (product.images && product.images.length > 1) {
+          galleryHTML = `
+            <div class="product-gallery">
+              ${product.images.map((img) => `<img src="${img}" alt="${product.title}" />`).join('')}
+            </div>
+          `;
+        }
+
+        productElement.innerHTML = `
+          <img src="${product.featured_image}" alt="${product.title}" />
+          ${galleryHTML}
+          <h3>${product.title}</h3>
+          <div class="product-price">$${product.price}</div>
+          <div class="product-description">${product.description}</div>
+          <button class="add-to-cart-btn" 
+                  data-variant-id="${product.variantId}">
+            Add to Cart
+          </button>
+        `;
+
+        // Add click event for add to cart button
+        productElement.querySelector('.add-to-cart-btn').addEventListener('click', async (e) => {
+          e.stopPropagation();
+          const variantId = e.target.dataset.variantId;
+          try {
+            const res = await fetch('/cart/add', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                Accept: 'application/json',
+              },
+              body: JSON.stringify({
+                items: [
+                  {
+                    id: variantId,
+                    quantity: 1,
+                  },
+                ],
+              }),
+            });
+            const result = await res.json();
+            console.log('Added to cart:', result);
+            e.target.innerText = 'Added!';
+            setTimeout(() => (e.target.innerText = 'Add to Cart'), 2000);
+          } catch (err) {
+            console.error('Error adding to cart:', err);
+            e.target.innerText = 'Error!';
+          }
+        });
+
+        // Add click events for gallery images
+        if (galleryHTML) {
+          const mainImage = productElement.querySelector('img');
+          const galleryImages = productElement.querySelectorAll('.product-gallery img');
+
+          galleryImages.forEach((img) => {
+            img.addEventListener('click', () => {
+              mainImage.src = img.src;
+            });
+          });
+        }
+
+        modalProducts.appendChild(productElement);
+      });
+    } else {
+      modalProducts.innerHTML =
+        '<p style="color: #666; padding: 20px; text-align: center;">No products associated with this video.</p>';
+    }
+
+    // Show modal
+    modal.style.display = 'block';
+    document.body.style.overflow = 'hidden';
+
+    // Play video when modal opens
+    modalVideo
+      .play()
+      .then(() => {
+        playPauseIcon.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="size-6">
+  <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 5.25v13.5m-7.5-13.5v13.5" />
+</svg>`
+; // Pause icon
+      })
+      .catch((e) => console.log('Autoplay prevented:', e));
+
+    // Update progress bar as video plays
+    function updateProgressBar() {
+      if (modalVideo.duration) {
+        const percent = (modalVideo.currentTime / modalVideo.duration) * 100;
+        progressBar.style.width = `${percent}%`;
+      }
+    }
+
+    modalVideo.addEventListener('timeupdate', updateProgressBar);
+
+    // Click on progress bar to seek
+    progressContainer.addEventListener('click', (e) => {
+      const rect = progressContainer.getBoundingClientRect();
+      const pos = (e.clientX - rect.left) / rect.width;
+      modalVideo.currentTime = pos * modalVideo.duration;
+      updateProgressBar();
+    });
+
+    // Toggle mute
+    muteBtn.addEventListener('click', () => {
+      modalVideo.muted = !modalVideo.muted;
+      muteBtn.textContent = modalVideo.muted ? '🔇' : '🔊';
+    });
+
+    // Click on video to play/pause
+    function togglePlayPause() {
+      if (modalVideo.paused) {
+        modalVideo.play().then(() => {
+          playPauseIcon.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="size-6">
+  <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 5.25v13.5m-7.5-13.5v13.5" />
+</svg>`
+; // Pause icon
+          showPlayPauseOverlay();
+        });
+      } else {
+        modalVideo.pause();
+        playPauseIcon.innerHTML =`<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="size-6">
+  <path strokeLinecap="round" strokeLinejoin="round" d="M5.25 5.653c0-.856.917-1.398 1.667-.986l11.54 6.347a1.125 1.125 0 0 1 0 1.972l-11.54 6.347a1.125 1.125 0 0 1-1.667-.986V5.653Z" />
+</svg>`
+; // Play icon
+        showPlayPauseOverlay();
+      }
+    }
+
+    function showPlayPauseOverlay() {
+      playPauseOverlay.classList.add('visible');
+      setTimeout(() => {
+        playPauseOverlay.classList.remove('visible');
+      }, 500);
+    }
+
+    modalVideo.addEventListener('click', togglePlayPause);
+
+    // Update mute button based on initial state
+    muteBtn.textContent = modalVideo.muted ? '🔇' : '🔊';
+  }
+
+  // Close modal when clicking the X
+  document.querySelector('.close-modal').addEventListener('click', function () {
+    const modal = document.getElementById('videoModal');
+    const backdrop = document.getElementById('modalBackdrop');
+    const modalVideo = modal.querySelector('.modal-video');
+
+    modalVideo.pause();
+    modal.style.display = 'none';
+    backdrop.style.display = 'none';
+    document.body.style.overflow = 'auto';
+  });
+
+  // Close modal when clicking on backdrop
+  document.getElementById('modalBackdrop').addEventListener('click', function () {
+    const modal = document.getElementById('videoModal');
+    const modalVideo = modal.querySelector('.modal-video');
+
+    modalVideo.pause();
+    modal.style.display = 'none';
+    this.style.display = 'none';
+    document.body.style.overflow = 'auto';
+  });
 
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', loadStoriesFromProxy);
