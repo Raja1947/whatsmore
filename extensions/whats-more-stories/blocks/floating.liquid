@@ -1,95 +1,76 @@
 <style>
-  .stories-container {
-    display: grid;
-    grid-template-columns: 1fr 1fr 1fr;
-    gap: 16px;
-    padding: 16px;
-    overflow-x: auto;
-    flex-wrap: nowrap;
-    -webkit-overflow-scrolling: touch;
-    margin-bottom: 16px;
-  }
-
-  .story-item {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: space-between;
-    gap: 10px;
-    flex-shrink: 0;
-  }
-
-  .story-video {
-    aspect-ratio: 4/5;
+  /* Floating video player styles */
+  .floating-video-container {
+    position: fixed;
+    bottom: 1%;
+    right: 4%;
+    width: 250px;
+    height: 370px;
+    z-index: 100;
+    background: white;
+    border:1px solid #e0e0e0
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
     overflow: hidden;
-    background-color: #ddd;
-    position: relative;
-    cursor: pointer;
-    width: 100%;
-    border-radius: 8px;
+    transition: transform 0.3s ease;
   }
 
-  .story-video video {
+  .floating-video-container:hover {
+    transform: scale(1.02);
+  }
+
+  .floating-video {
     width: 100%;
     height: 100%;
     object-fit: cover;
-    border-radius: 8px;
+    cursor: pointer;
   }
 
-  .product-info {
+  .floating-product-info {
     position: absolute;
     bottom: 0;
     width: 100%;
     text-align: center;
-    padding: 3px;
-    background: #cec7c7b8;
-    border-radius: 0 0 8px 8px;
+    padding: 8px;
+    background: rgba(255, 255, 255, 0.9);
+    border-radius: 0 0 12px 12px;
     display: none;
     z-index: 10;
-    transition: opacity 0.3s ease;
   }
 
-  .product-info.visible {
-    display: block;
-    opacity: 1;
+  .floating-product-info.visible {
+    display: none
+
   }
 
-  .product-info img {
-    width: 70px;
-    height: 70px;
+  .floating-product-info img {
+    width: 60px;
+    height: 60px;
     object-fit: cover;
     cursor: pointer;
     border-radius: 4px;
   }
 
-  #loading-text {
-    color: #888;
-    font-size: 13px;
+  .floating-video-controls {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    z-index: 10;
   }
 
-  .product-item {
+  .floating-mute-btn {
+    background: rgba(0, 0, 0, 0.5);
+    color: white;
+    border: none;
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 10px;
   }
 
-  .product-item img {
-    flex-basis: 30%;
-  }
-
-  .product-item div {
-    flex-basis: 65%;
-  }
-
-  .info-price {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    gap: 10px;
-  }
-
-  /* Modal styles */
+  /* Modal styles (same as before but included for completeness) */
   .video-modal {
     display: none;
     position: fixed;
@@ -100,10 +81,8 @@
     height: 442px;
     margin: auto;
     border: 1px solid #e0e0e0;
-    
   }
 
-  /* Backdrop effect */
   .modal-backdrop {
     display: none;
     position: fixed;
@@ -120,7 +99,6 @@
     display: flex;
     height: 100%;
     width: 100%;
-
     background: white;
   }
 
@@ -171,7 +149,6 @@
 
   .product-details {
     background: white;
-
     margin-bottom: 20px;
   }
 
@@ -190,7 +167,6 @@
     width: 100%;
     max-height: 200px;
     object-fit: cover;
-
     margin-bottom: 10px;
   }
 
@@ -248,7 +224,6 @@
     transform: scale(1.05);
   }
 
-  /* Custom video controls */
   .video-controls {
     height: 40px;
     background: rgba(0, 0, 0, 0.7);
@@ -284,7 +259,6 @@
     padding: 5px;
   }
 
-  /* Play/Pause overlay */
   .play-pause-overlay {
     position: absolute;
     top: 0;
@@ -342,11 +316,30 @@
       height: 30px;
       font-size: 20px;
     }
+
+    .floating-video-container {
+      width: 250px;
+      height: 350px;
+      right: 10px;
+      bottom: 10px;
+    }
+  }
+
+  @media (max-width: 768px) {
+    .floating-video-container {
+      width: 200px;
+      height: 300px;
+    }
   }
 </style>
 
-<div class="stories-container" id="stories-container">
-  <p id="loading-text">Loading stories...</p>
+<!-- Floating Video Container -->
+<div class="floating-video-container" id="floatingVideoContainer">
+  <div class="floating-video-controls">
+    <button class="floating-mute-btn" id="floatingMuteBtn">🔊</button>
+  </div>
+  <video class="floating-video" id="floatingVideo"></video>
+  <div class="floating-product-info" id="floatingProductInfo"></div>
 </div>
 
 <!-- Modal Backdrop -->
@@ -361,9 +354,8 @@
       <div class="play-pause-overlay">
         <div class="play-pause-icon">
           <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6">
-  <path stroke-linecap="round" stroke-linejoin="round" d="M5.25 5.653c0-.856.917-1.398 1.667-.986l11.54 6.347a1.125 1.125 0 0 1 0 1.972l-11.54 6.347a1.125 1.125 0 0 1-1.667-.986V5.653Z" />
-</svg>
-{% comment %} //play-icon {% endcomment %}
+            <path stroke-linecap="round" stroke-linejoin="round" d="M5.25 5.653c0-.856.917-1.398 1.667-.986l11.54 6.347a1.125 1.125 0 0 1 0 1.972l-11.54 6.347a1.125 1.125 0 0 1-1.667-.986V5.653Z" />
+          </svg>
         </div>
       </div>
       <div class="video-controls">
@@ -380,183 +372,182 @@
 </div>
 
 <script>
+  let allVideos = [];
+  let currentVideoIndex = 0;
+  let currentProductsData = [];
+  let productVisibleTimeout = null;
+
   async function loadStoriesFromProxy() {
     try {
       const res = await fetch('https://booth-telephony-sacred-nearly.trycloudflare.com/app/proxy');
       const responseJson = await res.json();
       console.log('API Response:', responseJson);
 
-      const videos = Array.isArray(responseJson) ? responseJson : responseJson.data || [];
-      const container = document.getElementById('stories-container');
-      document.getElementById('loading-text')?.remove();
-
-      if (videos.length > 0) {
-        for (const item of videos) {
-          const storyItem = document.createElement('div');
-          storyItem.className = 'story-item';
-
-          const videoContainer = document.createElement('div');
-          videoContainer.className = 'story-video';
-
-          const video = document.createElement('video');
-          video.src = item.url;
-          video.autoplay = true;
-          video.loop = false;
-          video.muted = true;
-          video.playsInline = true;
-
-          const productInfo = document.createElement('div');
-          productInfo.className = 'product-info';
-          videoContainer.appendChild(productInfo);
-
-          // Store product data and timestamps
-          let productsData = [];
-          let currentProductIndex = -1;
-          let productVisibleTimeout = null;
-
-          if (item.productLinks && item.productLinks.length > 0) {
-            // Load product data
-            const productPromises = item.productLinks.map(async (link) => {
-              try {
-                const product = await fetchProductByHandle(link.handle);
-                return {
-                  ...product,
-                  timestamp: link.timestamp,
-                  duration: 3, // Show each product for 3 seconds by default
-                };
-              } catch (e) {
-                console.error(`Error loading product ${link.handle}:`, e);
-                return null;
-              }
-            });
-
-            productsData = (await Promise.all(productPromises)).filter(Boolean);
-            productsData.sort((a, b) => a.timestamp - b.timestamp); // Sort by timestamp
-
-            // Set up timeupdate listener
-            video.addEventListener('timeupdate', () => {
-              const currentTime = video.currentTime;
-              let showIndex = -1; //means no product to show
-
-              // Find which product should be shown based on current time
-              for (let i = 0; i < productsData.length; i++) {
-                if (
-                  currentTime >= productsData[i].timestamp &&
-                  currentTime < productsData[i].timestamp + productsData[i].duration
-                ) {
-                  showIndex = i;
-                  break;
-                }
-              }
-
-              // If we found a product to show and it's different from current one
-              if (showIndex !== -1 && showIndex !== currentProductIndex) {
-                currentProductIndex = showIndex;
-                const product = productsData[showIndex];
-
-                productInfo.innerHTML = `
-                  <div class="product-item" style="margin-bottom: 10px;">
-                    <img src="${product.featured_image}" alt="${product.title}" 
-                         data-product-url="${product.url}" />
-                    <div>
-                      <p style="margin: 5px 0 0;"><strong>${product.title}</strong></p>
-                      <div class="info-price">
-                        <p style="margin: 0 0 5px;">$${product.price}</p>
-                        <button class="add-to-cart-btn" 
-                                data-variant-id="${product.variantId}" 
-                                style="padding: 6px 10px; background: #f0f0f0; color: #333; border: 1px solid #ddd; cursor: pointer; border-radius: 4px;">
-                          Add to Cart
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                `;
-
-                productInfo.classList.add('visible');
-
-                // Clear any previous timeout
-                if (productVisibleTimeout) {
-                  clearTimeout(productVisibleTimeout);
-                }
-
-                // Set timeout to hide the product after its duration
-                productVisibleTimeout = setTimeout(() => {
-                  productInfo.classList.remove('visible');
-                  currentProductIndex = -1;
-                }, productsData[showIndex].duration * 1000);
-
-                // Set up event listeners for the new elements
-                productInfo.querySelector('img').addEventListener('click', (e) => {
-                  e.stopPropagation();
-                  window.location.href = e.target.dataset.productUrl;
-                });
-
-                productInfo.querySelector('.add-to-cart-btn').addEventListener('click', async (e) => {
-                  e.stopPropagation();
-                  const variantId = e.target.dataset.variantId;
-                  try {
-                    const res = await fetch('/cart/add', {
-                      method: 'POST',
-                      headers: {
-                        'Content-Type': 'application/json',
-                        Accept: 'application/json',
-                      },
-                      body: JSON.stringify({
-                        items: [
-                          {
-                            id: variantId,
-                            quantity: 1,
-                          },
-                        ],
-                      }),
-                    });
-                    const result = await res.json();
-                    console.log('Added to cart:', result);
-                    e.target.innerText = 'Added!';
-                    setTimeout(() => (e.target.innerText = 'Add to Cart'), 2000);
-                  } catch (err) {
-                    console.error('Error adding to cart:', err);
-                    e.target.innerText = 'Error!';
-                  }
-                });
-              } else if (showIndex === -1 && currentProductIndex !== -1) {
-                // Hide product info if we passed all timestamps
-                currentProductIndex = -1;
-                productInfo.classList.remove('visible');
-                if (productVisibleTimeout) {
-                  clearTimeout(productVisibleTimeout);
-                  productVisibleTimeout = null;
-                }
-              }
-            });
-          }
-
-          // When video ends, hide any visible product
-          video.addEventListener('ended', () => {
-            productInfo.classList.remove('visible');
-            currentProductIndex = -1;
-            if (productVisibleTimeout) {
-              clearTimeout(productVisibleTimeout);
-              productVisibleTimeout = null;
-            }
-          });
-
-          // Add click event to open modal
-          videoContainer.addEventListener('click', () => {
-            openModal(item.url, productsData);
-          });
-
-          videoContainer.appendChild(video);
-          storyItem.appendChild(videoContainer);
-          container.appendChild(storyItem);
-        }
+      allVideos = Array.isArray(responseJson) ? responseJson : responseJson.data || [];
+      
+      if (allVideos.length > 0) {
+        // Start playing the first video
+        playNextVideo();
       } else {
-        container.innerHTML = '<p>No stories found.</p>';
+        document.getElementById('floatingVideoContainer').style.display = 'none';
       }
     } catch (err) {
       console.error('Failed to load stories', err);
-      document.getElementById('stories-container').innerHTML = '<p>Error loading stories.</p>';
+      document.getElementById('floatingVideoContainer').style.display = 'none';
     }
+  }
+
+  async function playNextVideo() {
+    if (currentVideoIndex >= allVideos.length) {
+      currentVideoIndex = 0; // Loop back to the first video
+    }
+
+    const videoData = allVideos[currentVideoIndex];
+    const floatingVideo = document.getElementById('floatingVideo');
+    const floatingProductInfo = document.getElementById('floatingProductInfo');
+    
+    // Reset product info
+    floatingProductInfo.classList.remove('visible');
+    floatingProductInfo.innerHTML = '';
+    currentProductsData = [];
+    
+    // Set video source
+    floatingVideo.src = videoData.url;
+    floatingVideo.muted = true;
+    floatingVideo.loop = false;
+    
+    // Load product data if available
+    if (videoData.productLinks && videoData.productLinks.length > 0) {
+      const productPromises = videoData.productLinks.map(async (link) => {
+        try {
+          const product = await fetchProductByHandle(link.handle);
+          return {
+            ...product,
+            timestamp: link.timestamp,
+            duration: 3, // Show each product for 3 seconds by default
+          };
+        } catch (e) {
+          console.error(`Error loading product ${link.handle}:`, e);
+          return null;
+        }
+      });
+
+      currentProductsData = (await Promise.all(productPromises)).filter(Boolean);
+      currentProductsData.sort((a, b) => a.timestamp - b.timestamp); // Sort by timestamp
+    }
+
+    // Play the video
+    floatingVideo.play().catch(e => console.log('Autoplay prevented:', e));
+    
+    // Set up event listeners for this video
+    setupVideoListeners(floatingVideo, floatingProductInfo, videoData);
+    
+    // Move to next video when this one ends
+    floatingVideo.onended = () => {
+      currentVideoIndex++;
+      playNextVideo();
+    };
+  }
+
+  function setupVideoListeners(videoElement, productInfoElement, videoData) {
+    // Timeupdate listener for product display
+    videoElement.addEventListener('timeupdate', () => {
+      const currentTime = videoElement.currentTime;
+      let showIndex = -1;
+
+      // Find which product should be shown based on current time
+      for (let i = 0; i < currentProductsData.length; i++) {
+        if (
+          currentTime >= currentProductsData[i].timestamp &&
+          currentTime < currentProductsData[i].timestamp + currentProductsData[i].duration
+        ) {
+          showIndex = i;
+          break;
+        }
+      }
+
+      // If we found a product to show
+      if (showIndex !== -1) {
+        const product = currentProductsData[showIndex];
+        
+        productInfoElement.innerHTML = `
+          <div class="product-item" style="margin-bottom: 10px;">
+            <img src="${product.featured_image}" alt="${product.title}" 
+                 data-product-url="${product.url}" />
+            <div>
+              <p style="margin: 5px 0 0;"><strong>${product.title}</strong></p>
+              <div class="info-price">
+                <p style="margin: 0 0 5px;">$${product.price}</p>
+                <button class="add-to-cart-btn" 
+                        data-variant-id="${product.variantId}" 
+                        style="padding: 6px 10px; background: #f0f0f0; color: #333; border: 1px solid #ddd; cursor: pointer; border-radius: 4px;">
+                  Add to Cart
+                </button>
+              </div>
+            </div>
+          </div>
+        `;
+
+        productInfoElement.classList.add('visible');
+
+        // Clear any previous timeout
+        if (productVisibleTimeout) {
+          clearTimeout(productVisibleTimeout);
+        }
+
+        // Set timeout to hide the product after its duration
+        productVisibleTimeout = setTimeout(() => {
+          productInfoElement.classList.remove('visible');
+        }, currentProductsData[showIndex].duration * 1000);
+
+        // Set up event listeners for the new elements
+        productInfoElement.querySelector('img').addEventListener('click', (e) => {
+          e.stopPropagation();
+          window.location.href = e.target.dataset.productUrl;
+        });
+
+        productInfoElement.querySelector('.add-to-cart-btn').addEventListener('click', async (e) => {
+          e.stopPropagation();
+          const variantId = e.target.dataset.variantId;
+          try {
+            const res = await fetch('/cart/add', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                Accept: 'application/json',
+              },
+              body: JSON.stringify({
+                items: [
+                  {
+                    id: variantId,
+                    quantity: 1,
+                  },
+                ],
+              }),
+            });
+            const result = await res.json();
+            console.log('Added to cart:', result);
+            e.target.innerText = 'Added!';
+            setTimeout(() => (e.target.innerText = 'Add to Cart'), 2000);
+          } catch (err) {
+            console.error('Error adding to cart:', err);
+            e.target.innerText = 'Error!';
+          }
+        });
+      } else if (showIndex === -1 && productInfoElement.classList.contains('visible')) {
+        // Hide product info if we passed all timestamps
+        productInfoElement.classList.remove('visible');
+        if (productVisibleTimeout) {
+          clearTimeout(productVisibleTimeout);
+          productVisibleTimeout = null;
+        }
+      }
+    });
+
+    // Click event to open modal
+    videoElement.addEventListener('click', () => {
+      openModal(videoData.url, currentProductsData);
+    });
   }
 
   async function fetchProductByHandle(handle) {
@@ -583,7 +574,7 @@
     }
   }
 
-  // Modal functions
+  // Modal functions (same as before)
   function openModal(videoUrl, productsData) {
     const modal = document.getElementById('videoModal');
     const backdrop = document.getElementById('modalBackdrop');
@@ -594,6 +585,10 @@
     const progressContainer = modal.querySelector('.progress-container');
     const playPauseOverlay = modal.querySelector('.play-pause-overlay');
     const playPauseIcon = modal.querySelector('.play-pause-icon');
+
+    // Pause the floating video
+    const floatingVideo = document.getElementById('floatingVideo');
+    floatingVideo.pause();
 
     // Show backdrop
     backdrop.style.display = 'block';
@@ -607,12 +602,10 @@
     modalProducts.innerHTML = '';
 
     if (productsData && productsData.length > 0) {
-      // Create product elements for each product
       productsData.forEach((product) => {
         const productElement = document.createElement('div');
         productElement.className = 'product-details';
 
-        // Create gallery of product images
         let galleryHTML = '';
         if (product.images && product.images.length > 1) {
           galleryHTML = `
@@ -634,7 +627,6 @@
           </button>
         `;
 
-        // Add click event for add to cart button
         productElement.querySelector('.add-to-cart-btn').addEventListener('click', async (e) => {
           e.stopPropagation();
           const variantId = e.target.dataset.variantId;
@@ -664,7 +656,6 @@
           }
         });
 
-        // Add click events for gallery images
         if (galleryHTML) {
           const mainImage = productElement.querySelector('img');
           const galleryImages = productElement.querySelectorAll('.product-gallery img');
@@ -693,12 +684,10 @@
       .then(() => {
         playPauseIcon.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="size-6">
   <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 5.25v13.5m-7.5-13.5v13.5" />
-</svg>`
-; // Pause icon
+</svg>`;
       })
       .catch((e) => console.log('Autoplay prevented:', e));
 
-    // Update progress bar as video plays
     function updateProgressBar() {
       if (modalVideo.duration) {
         const percent = (modalVideo.currentTime / modalVideo.duration) * 100;
@@ -708,7 +697,6 @@
 
     modalVideo.addEventListener('timeupdate', updateProgressBar);
 
-    // Click on progress bar to seek
     progressContainer.addEventListener('click', (e) => {
       const rect = progressContainer.getBoundingClientRect();
       const pos = (e.clientX - rect.left) / rect.width;
@@ -716,28 +704,24 @@
       updateProgressBar();
     });
 
-    // Toggle mute
     muteBtn.addEventListener('click', () => {
       modalVideo.muted = !modalVideo.muted;
       muteBtn.textContent = modalVideo.muted ? '🔇' : '🔊';
     });
 
-    // Click on video to play/pause
     function togglePlayPause() {
       if (modalVideo.paused) {
         modalVideo.play().then(() => {
           playPauseIcon.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="size-6">
   <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 5.25v13.5m-7.5-13.5v13.5" />
-</svg>`
-; // Pause icon
+</svg>`;
           showPlayPauseOverlay();
         });
       } else {
         modalVideo.pause();
-        playPauseIcon.innerHTML =`<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="size-6">
+        playPauseIcon.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="size-6">
   <path strokeLinecap="round" strokeLinejoin="round" d="M5.25 5.653c0-.856.917-1.398 1.667-.986l11.54 6.347a1.125 1.125 0 0 1 0 1.972l-11.54 6.347a1.125 1.125 0 0 1-1.667-.986V5.653Z" />
-</svg>`
-; // Play icon
+</svg>`;
         showPlayPauseOverlay();
       }
     }
@@ -750,8 +734,6 @@
     }
 
     modalVideo.addEventListener('click', togglePlayPause);
-
-    // Update mute button based on initial state
     muteBtn.textContent = modalVideo.muted ? '🔇' : '🔊';
   }
 
@@ -760,24 +742,40 @@
     const modal = document.getElementById('videoModal');
     const backdrop = document.getElementById('modalBackdrop');
     const modalVideo = modal.querySelector('.modal-video');
+    const floatingVideo = document.getElementById('floatingVideo');
 
     modalVideo.pause();
     modal.style.display = 'none';
     backdrop.style.display = 'none';
     document.body.style.overflow = 'auto';
+    
+    // Resume the floating video
+    floatingVideo.play().catch(e => console.log('Autoplay prevented:', e));
   });
 
   // Close modal when clicking on backdrop
   document.getElementById('modalBackdrop').addEventListener('click', function () {
     const modal = document.getElementById('videoModal');
     const modalVideo = modal.querySelector('.modal-video');
+    const floatingVideo = document.getElementById('floatingVideo');
 
     modalVideo.pause();
     modal.style.display = 'none';
     this.style.display = 'none';
     document.body.style.overflow = 'auto';
+    
+    // Resume the floating video
+    floatingVideo.play().catch(e => console.log('Autoplay prevented:', e));
   });
 
+  // Mute button for floating video
+  document.getElementById('floatingMuteBtn').addEventListener('click', function() {
+    const floatingVideo = document.getElementById('floatingVideo');
+    floatingVideo.muted = !floatingVideo.muted;
+    this.textContent = floatingVideo.muted ? '🔇' : '🔊';
+  });
+
+  // Initialize when DOM is loaded
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', loadStoriesFromProxy);
   } else {
@@ -787,14 +785,14 @@
 
 {% schema %}
 {
-  "name": "Collection Videos",
+  "name": "Floating Video Player",
   "target": "section",
   "settings": [
     {
       "type": "text",
       "id": "heading",
-      "label": "All Videos",
-      "default": "All Videos"
+      "label": "Floating Video Player",
+      "default": "Floating Video Player"
     }
   ]
 }

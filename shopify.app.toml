@@ -3,7 +3,7 @@
 client_id = "7555fcaea25370b139dd60c3b471c7ac"
 name = "whats-more"
 handle = "whats-more-1"
-application_url = "https://campbell-bangladesh-passed-turn.trycloudflare.com"
+application_url = "https://booth-telephony-sacred-nearly.trycloudflare.com"
 embedded = true
 
 [build]
@@ -19,13 +19,13 @@ scopes = "write_products"
 
 [auth]
 redirect_urls = [
-  "https://campbell-bangladesh-passed-turn.trycloudflare.com/auth/callback",
-  "https://campbell-bangladesh-passed-turn.trycloudflare.com/auth/shopify/callback",
-  "https://campbell-bangladesh-passed-turn.trycloudflare.com/api/auth/callback"
+  "https://booth-telephony-sacred-nearly.trycloudflare.com/auth/callback",
+  "https://booth-telephony-sacred-nearly.trycloudflare.com/auth/shopify/callback",
+  "https://booth-telephony-sacred-nearly.trycloudflare.com/api/auth/callback"
 ]
 
 [app_proxy]
-url = "https://campbell-bangladesh-passed-turn.trycloudflare.com/app/proxy"
+url = "https://booth-telephony-sacred-nearly.trycloudflare.com/app/proxy"
 subpath = "whatsmore"
 prefix = "apps"
 
