@@ -1,7 +1,9 @@
-{{ 'floating.css' | asset_url | stylesheet_tag}}
+{{ 'productFloat.css' | asset_url | stylesheet_tag}} 
+
+
 
 <!-- Floating Video Container -->
-<div class="floating-video-container" id="floatingVideoContainer">
+<div class="floating-video-container" id="floatingVideoContainer" style="display: none;">
   <div class="floating-video-controls">
     <button class="floating-mute-btn" id="floatingMuteBtn">🔊</button>
   </div>
@@ -43,18 +45,41 @@
   let currentVideoIndex = 0;
   let currentProductsData = [];
   let productVisibleTimeout = null;
+  let currentProductHandle = '';
+
+  // Get current product handle from the URL
+  function getCurrentProductHandle() {
+    if (window.location.pathname.startsWith('/products/')) {
+      const pathParts = window.location.pathname.split('/');
+      return pathParts[2];
+    }
+    return '';
+  }
 
   async function loadStoriesFromProxy() {
     try {
-      const res = await fetch('https://travels-ee-counseling-enjoy.trycloudflare.com/app/proxy');
+      currentProductHandle = getCurrentProductHandle();
+      if (!currentProductHandle) {
+        console.log('Not on a product page, hiding floating video');
+        document.getElementById('floatingVideoContainer').style.display = 'none';
+        return;
+      }
+
+      const res = await fetch('https://specialist-authority-integral-fence.trycloudflare.com/app/proxy');
       const responseJson = await res.json();
       console.log('API Response:', responseJson);
 
       allVideos = Array.isArray(responseJson) ? responseJson : responseJson.data || [];
       
+      // Filter videos to only those that include the current product
+      allVideos = allVideos.filter(video => {
+        return video.productLinks && video.productLinks.some(link => link.handle === currentProductHandle);
+      });
+      
       if (allVideos.length > 0) {
         // Start playing the first video
         playNextVideo();
+        document.getElementById('floatingVideoContainer').style.display = 'block';
       } else {
         document.getElementById('floatingVideoContainer').style.display = 'none';
       }
@@ -65,6 +90,11 @@
   }
 
   async function playNextVideo() {
+    if (allVideos.length === 0) {
+      document.getElementById('floatingVideoContainer').style.display = 'none';
+      return;
+    }
+
     if (currentVideoIndex >= allVideos.length) {
       currentVideoIndex = 0; // Loop back to the first video
     }
@@ -241,7 +271,7 @@
     }
   }
 
-  // Modal functions (same as before)
+  // Modal functions
   function openModal(videoUrl, productsData) {
     const modal = document.getElementById('videoModal');
     const backdrop = document.getElementById('modalBackdrop');
@@ -463,4 +493,5 @@
     }
   ]
 }
+
 {% endschema %}

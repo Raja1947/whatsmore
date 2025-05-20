@@ -10,7 +10,7 @@ export async function loader({ request }) {
       productLinks: true,
     },
   });
-  console.log(videos, "videooossssss");
+  console.log(videos, "videosssss");
 
   return json(
     { data: videos },

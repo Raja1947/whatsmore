@@ -1,94 +1,75 @@
-  .stories-container {
-    display: grid;
-    grid-template-columns: 1fr 1fr 1fr;
-    gap: 16px;
-    padding: 16px;
-    overflow-x: auto;
-    flex-wrap: nowrap;
-    -webkit-overflow-scrolling: touch;
-    margin-bottom: 16px;
-  }
-
-  .story-item {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: space-between;
-    gap: 10px;
-    flex-shrink: 0;
-  }
-
-  .story-video {
-    aspect-ratio: 4/5;
+  /* Floating video player styles */
+  .floating-video-container {
+    position: fixed;
+    bottom: 1%;
+    right: 4%;
+    width: 150px;
+    height: 250px;
+    z-index: 100;
+    background: white;
+    border:1px solid #3e0080; 
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
     overflow: hidden;
-    background-color: #ddd;
-    position: relative;
-    cursor: pointer;
-    width: 100%;
-    border-radius: 8px;
+    transition: transform 0.3s ease;
   }
 
-  .story-video video {
+  .floating-video-container:hover {
+    transform: scale(1.02);
+  }
+
+  .floating-video {
     width: 100%;
     height: 100%;
     object-fit: cover;
-    border-radius: 8px;
+    cursor: pointer;
   }
 
-  .product-info {
+  .floating-product-info {
     position: absolute;
     bottom: 0;
     width: 100%;
     text-align: center;
-    padding: 3px;
-    background: #cec7c7b8;
-    border-radius: 0 0 8px 8px;
+    padding: 8px;
+    background: rgba(255, 255, 255, 0.9);
+    border-radius: 0 0 12px 12px;
     display: none;
     z-index: 10;
-    transition: opacity 0.3s ease;
   }
 
-  .product-info.visible {
-    display: block;
-    opacity: 1;
+  .floating-product-info.visible {
+    display: none
+
   }
 
-  .product-info img {
-    width: 70px;
-    height: 70px;
+  .floating-product-info img {
+    width: 60px;
+    height: 60px;
     object-fit: cover;
     cursor: pointer;
     border-radius: 4px;
   }
 
-  #loading-text {
-    color: #888;
-    font-size: 13px;
+  .floating-video-controls {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    z-index: 10;
   }
 
-  .product-item {
+  .floating-mute-btn {
+    background: rgba(0, 0, 0, 0.5);
+    color: white;
+    border: none;
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 10px;
   }
 
-  .product-item img {
-    flex-basis: 30%;
-  }
-
-  .product-item div {
-    flex-basis: 65%;
-  }
-
-  .info-price {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    gap: 10px;
-  }
-
-  /* Modal styles */
+  /* Modal styles (same as before but included for completeness) */
   .video-modal {
     display: none;
     position: fixed;
@@ -99,10 +80,8 @@
     height: 442px;
     margin: auto;
     border: 1px solid #e0e0e0;
-    
   }
 
-  /* Backdrop effect */
   .modal-backdrop {
     display: none;
     position: fixed;
@@ -119,7 +98,6 @@
     display: flex;
     height: 100%;
     width: 100%;
-
     background: white;
   }
 
@@ -170,7 +148,6 @@
 
   .product-details {
     background: white;
-
     margin-bottom: 20px;
   }
 
@@ -189,7 +166,6 @@
     width: 100%;
     max-height: 200px;
     object-fit: cover;
-
     margin-bottom: 10px;
   }
 
@@ -247,7 +223,6 @@
     transform: scale(1.05);
   }
 
-  /* Custom video controls */
   .video-controls {
     height: 40px;
     background: rgba(0, 0, 0, 0.7);
@@ -283,7 +258,6 @@
     padding: 5px;
   }
 
-  /* Play/Pause overlay */
   .play-pause-overlay {
     position: absolute;
     top: 0;
@@ -340,5 +314,19 @@
       width: 30px;
       height: 30px;
       font-size: 20px;
+    }
+
+    .floating-video-container {
+      width: 250px;
+      height: 350px;
+      right: 10px;
+      bottom: 10px;
+    }
+  }
+
+  @media (max-width: 768px) {
+    .floating-video-container {
+      width: 200px;
+      height: 300px;
     }
   }
