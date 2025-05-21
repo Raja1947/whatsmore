@@ -37,7 +37,7 @@
 <script>
   async function loadStoriesFromProxy() {
     try {
-      const res = await fetch('https://candy-comparing-boost-copper.trycloudflare.com/app/proxy');
+      const res = await fetch('https://grove-earliest-decent-md.trycloudflare.com/app/proxy');
       const responseJson = await res.json();
       console.log('API Response:', responseJson);
 
@@ -56,7 +56,7 @@
           const video = document.createElement('video');
           video.src = item.url;
           video.autoplay = true;
-          video.loop = false;
+          video.loop = true;
           video.muted = true;
           video.playsInline = true;
 

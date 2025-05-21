@@ -3,7 +3,7 @@
 client_id = "7555fcaea25370b139dd60c3b471c7ac"
 name = "whats-more"
 handle = "whats-more-1"
-application_url = "https://specialist-authority-integral-fence.trycloudflare.com"
+application_url = "https://grove-earliest-decent-md.trycloudflare.com"
 embedded = true
 
 [build]
@@ -19,13 +19,13 @@ scopes = "write_products"
 
 [auth]
 redirect_urls = [
-  "https://specialist-authority-integral-fence.trycloudflare.com/auth/callback",
-  "https://specialist-authority-integral-fence.trycloudflare.com/auth/shopify/callback",
-  "https://specialist-authority-integral-fence.trycloudflare.com/api/auth/callback"
+  "https://grove-earliest-decent-md.trycloudflare.com/auth/callback",
+  "https://grove-earliest-decent-md.trycloudflare.com/auth/shopify/callback",
+  "https://grove-earliest-decent-md.trycloudflare.com/api/auth/callback"
 ]
 
 [app_proxy]
-url = "https://specialist-authority-integral-fence.trycloudflare.com/app/proxy"
+url = "https://grove-earliest-decent-md.trycloudflare.com/app/proxy"
 subpath = "whatsmore"
 prefix = "apps"
 

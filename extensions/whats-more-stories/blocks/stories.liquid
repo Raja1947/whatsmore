@@ -73,7 +73,7 @@
   
   async function loadStories() {
     try {
-      const response = await fetch('https://clan-scoring-scientific-asian.trycloudflare.com/app/proxy');
+      const response = await fetch('https://grove-earliest-decent-md.trycloudflare.com/app/proxy');
       const data = await response.json();
       allStories = Array.isArray(data) ? data : data.data || [];
       
@@ -140,6 +140,7 @@
     modalVideo.addEventListener('timeupdate', updateProgress);
     modalVideo.addEventListener('ended', handleVideoEnd);
     modalBackdrop.addEventListener('click', closeModal);
+    document.querySelector('.close-modal').addEventListener('click', closeModal); 
     muteBtn.addEventListener('click', toggleMute);
     storyNavPrev.addEventListener('click', navigateToPrevStory);
     storyNavNext.addEventListener('click', navigateToNextStory);
@@ -165,6 +166,7 @@
     modalVideo.removeEventListener('timeupdate', updateProgress);
     modalVideo.removeEventListener('ended', handleVideoEnd);
     modalBackdrop.removeEventListener('click', closeModal);
+
     muteBtn.removeEventListener('click', toggleMute);
     storyNavPrev.removeEventListener('click', navigateToPrevStory);
     storyNavNext.removeEventListener('click', navigateToNextStory);
