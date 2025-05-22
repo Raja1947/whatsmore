@@ -15,10 +15,16 @@
       <video class="modal-video"></video>
       <div class="play-pause-overlay">
         <div class="play-pause-icon">
-          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6">
-  <path stroke-linecap="round" stroke-linejoin="round" d="M5.25 5.653c0-.856.917-1.398 1.667-.986l11.54 6.347a1.125 1.125 0 0 1 0 1.972l-11.54 6.347a1.125 1.125 0 0 1-1.667-.986V5.653Z" />
-</svg>
-{% comment %} //play-icon {% endcomment %}
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke-width="1.5"
+            stroke="currentColor"
+            class="size-6"
+          >
+            <path stroke-linecap="round" stroke-linejoin="round" d="M5.25 5.653c0-.856.917-1.398 1.667-.986l11.54 6.347a1.125 1.125 0 0 1 0 1.972l-11.54 6.347a1.125 1.125 0 0 1-1.667-.986V5.653Z" />
+          </svg>
         </div>
       </div>
       <div class="video-controls">
@@ -37,7 +43,7 @@
 <script>
   async function loadStoriesFromProxy() {
     try {
-      const res = await fetch('https://grove-earliest-decent-md.trycloudflare.com/app/proxy');
+      const res = await fetch('https://asian-ah-mission-block.trycloudflare.com/app/proxy');
       const responseJson = await res.json();
       console.log('API Response:', responseJson);
 
@@ -64,20 +70,18 @@
           productInfo.className = 'product-info';
           videoContainer.appendChild(productInfo);
 
-          // Store product data and timestamps
           let productsData = [];
           let currentProductIndex = -1;
           let productVisibleTimeout = null;
 
           if (item.productLinks && item.productLinks.length > 0) {
-            // Load product data
             const productPromises = item.productLinks.map(async (link) => {
               try {
                 const product = await fetchProductByHandle(link.handle);
                 return {
                   ...product,
                   timestamp: link.timestamp,
-                  duration: 3, // 3 seconds by default
+                  duration: 3,
                 };
               } catch (e) {
                 console.error(`Error loading product ${link.handle}:`, e);
@@ -86,14 +90,12 @@
             });
 
             productsData = (await Promise.all(productPromises)).filter(Boolean);
-            productsData.sort((a, b) => a.timestamp - b.timestamp); // Sort by timestamp
+            productsData.sort((a, b) => a.timestamp - b.timestamp);
 
-            // Set up timeupdate listener
             video.addEventListener('timeupdate', () => {
               const currentTime = video.currentTime;
-              let showIndex = -1; //means no product to show
+              let showIndex = -1;
 
-              // Find which product should be shown based on current time
               for (let i = 0; i < productsData.length; i++) {
                 if (
                   currentTime >= productsData[i].timestamp &&
@@ -104,7 +106,6 @@
                 }
               }
 
-              // If we found a product to show and it's different from current one
               if (showIndex !== -1 && showIndex !== currentProductIndex) {
                 currentProductIndex = showIndex;
                 const product = productsData[showIndex];
@@ -129,18 +130,15 @@
 
                 productInfo.classList.add('visible');
 
-                // Clear any previous timeout
                 if (productVisibleTimeout) {
                   clearTimeout(productVisibleTimeout);
                 }
 
-                // Set timeout to hide the product after its duration
                 productVisibleTimeout = setTimeout(() => {
                   productInfo.classList.remove('visible');
                   currentProductIndex = -1;
                 }, productsData[showIndex].duration * 1000);
 
-                // Set up event listeners for the new elements
                 productInfo.querySelector('img').addEventListener('click', (e) => {
                   e.stopPropagation();
                   window.location.href = e.target.dataset.productUrl;
@@ -175,7 +173,6 @@
                   }
                 });
               } else if (showIndex === -1 && currentProductIndex !== -1) {
-                // Hide product info if we passed all timestamps
                 currentProductIndex = -1;
                 productInfo.classList.remove('visible');
                 if (productVisibleTimeout) {
@@ -186,7 +183,6 @@
             });
           }
 
-          // When video ends, hide any visible product
           video.addEventListener('ended', () => {
             productInfo.classList.remove('visible');
             currentProductIndex = -1;
@@ -196,7 +192,6 @@
             }
           });
 
-          // Add click event to open modal
           videoContainer.addEventListener('click', () => {
             openModal(item.url, productsData);
           });
@@ -238,7 +233,6 @@
     }
   }
 
-  // Modal functions
   function openModal(videoUrl, productsData) {
     const modal = document.getElementById('videoModal');
     const backdrop = document.getElementById('modalBackdrop');
@@ -250,24 +244,23 @@
     const playPauseOverlay = modal.querySelector('.play-pause-overlay');
     const playPauseIcon = modal.querySelector('.play-pause-icon');
 
-    // Show backdrop
-    backdrop.style.display = 'block';
+    // Reset progress bar
+    progressBar.style.width = '0%';
+    progressBar.style.transition = 'width 0.1s linear';
 
     // Set video source
     modalVideo.src = videoUrl;
-    modalVideo.muted = true; 
-    modalVideo.controls = false; 
+    modalVideo.muted = true;
+    modalVideo.controls = false;
 
     // Load product details
     modalProducts.innerHTML = '';
 
     if (productsData && productsData.length > 0) {
-      // Create product elements for each product
       productsData.forEach((product) => {
         const productElement = document.createElement('div');
         productElement.className = 'product-details';
 
-        // Create gallery of product images
         let galleryHTML = '';
         if (product.images && product.images.length > 1) {
           galleryHTML = `
@@ -289,7 +282,6 @@
           </button>
         `;
 
-        // Add click event for add to cart button
         productElement.querySelector('.add-to-cart-btn').addEventListener('click', async (e) => {
           e.stopPropagation();
           const variantId = e.target.dataset.variantId;
@@ -319,7 +311,6 @@
           }
         });
 
-        // Add click events for gallery images
         if (galleryHTML) {
           const mainImage = productElement.querySelector('img');
           const galleryImages = productElement.querySelectorAll('.product-gallery img');
@@ -340,59 +331,51 @@
 
     // Show modal
     modal.style.display = 'block';
+    backdrop.style.display = 'block';
     document.body.style.overflow = 'hidden';
 
-    // Play video when modal opens
-    modalVideo
-      .play()
-      .then(() => {
-        playPauseIcon.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="size-6">
-  <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 5.25v13.5m-7.5-13.5v13.5" />
-</svg>`
-; // Pause icon
-      })
-      .catch((e) => console.log('Autoplay prevented:', e));
-
-    // Update progress bar as video plays
+    // Update progress bar function
     function updateProgressBar() {
-      if (modalVideo.duration) {
+      if (!isNaN(modalVideo.duration) && modalVideo.duration > 0) {
         const percent = (modalVideo.currentTime / modalVideo.duration) * 100;
         progressBar.style.width = `${percent}%`;
       }
     }
 
-    modalVideo.addEventListener('timeupdate', updateProgressBar);
-
-    // Click on progress bar to seek
-    progressContainer.addEventListener('click', (e) => {
+    // Seek handler
+    function seekHandler(e) {
       const rect = progressContainer.getBoundingClientRect();
       const pos = (e.clientX - rect.left) / rect.width;
       modalVideo.currentTime = pos * modalVideo.duration;
+
+      // Visual feedback
+      progressBar.style.transition = 'none';
       updateProgressBar();
-    });
+      setTimeout(() => {
+        progressBar.style.transition = 'width 0.1s linear';
+      }, 100);
+    }
 
     // Toggle mute
-    muteBtn.addEventListener('click', () => {
+    function toggleMute() {
       modalVideo.muted = !modalVideo.muted;
       muteBtn.textContent = modalVideo.muted ? '🔇' : '🔊';
-    });
+    }
 
-    // Click on video to play/pause
+    // Toggle play/pause
     function togglePlayPause() {
       if (modalVideo.paused) {
         modalVideo.play().then(() => {
           playPauseIcon.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="size-6">
-  <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 5.25v13.5m-7.5-13.5v13.5" />
-</svg>`
-; // Pause icon
+            <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 5.25v13.5m-7.5-13.5v13.5" />
+          </svg>`;
           showPlayPauseOverlay();
         });
       } else {
         modalVideo.pause();
-        playPauseIcon.innerHTML =`<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="size-6">
-  <path strokeLinecap="round" strokeLinejoin="round" d="M5.25 5.653c0-.856.917-1.398 1.667-.986l11.54 6.347a1.125 1.125 0 0 1 0 1.972l-11.54 6.347a1.125 1.125 0 0 1-1.667-.986V5.653Z" />
-</svg>`
-; // Play icon
+        playPauseIcon.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="size-6">
+          <path strokeLinecap="round" strokeLinejoin="round" d="M5.25 5.653c0-.856.917-1.398 1.667-.986l11.54 6.347a1.125 1.125 0 0 1 0 1.972l-11.54 6.347a1.125 1.125 0 0 1-1.667-.986V5.653Z" />
+        </svg>`;
         showPlayPauseOverlay();
       }
     }
@@ -404,34 +387,48 @@
       }, 500);
     }
 
+    // Event listeners
+    modalVideo.addEventListener('timeupdate', updateProgressBar);
+    modalVideo.addEventListener('loadedmetadata', updateProgressBar);
     modalVideo.addEventListener('click', togglePlayPause);
+    progressContainer.addEventListener('click', seekHandler);
+    muteBtn.addEventListener('click', toggleMute);
 
-    // Update mute button based on initial state
+    // Cleanup function
+    function cleanupModal() {
+      modalVideo.removeEventListener('timeupdate', updateProgressBar);
+      modalVideo.removeEventListener('loadedmetadata', updateProgressBar);
+      modalVideo.removeEventListener('click', togglePlayPause);
+      progressContainer.removeEventListener('click', seekHandler);
+      muteBtn.removeEventListener('click', toggleMute);
+    }
+
+    // Close modal function
+    function closeModal() {
+      modalVideo.pause();
+      modal.style.display = 'none';
+      backdrop.style.display = 'none';
+      document.body.style.overflow = 'auto';
+      cleanupModal();
+    }
+
+    // Close handlers
+    document.querySelector('.close-modal').addEventListener('click', closeModal);
+    backdrop.addEventListener('click', closeModal);
+
+    // Play video when modal opens
+    modalVideo
+      .play()
+      .then(() => {
+        playPauseIcon.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="size-6">
+        <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 5.25v13.5m-7.5-13.5v13.5" />
+      </svg>`;
+      })
+      .catch((e) => console.log('Autoplay prevented:', e));
+
+    // Update mute button
     muteBtn.textContent = modalVideo.muted ? '🔇' : '🔊';
   }
-
-  // Close modal when clicking the X
-  document.querySelector('.close-modal').addEventListener('click', function () {
-    const modal = document.getElementById('videoModal');
-    const backdrop = document.getElementById('modalBackdrop');
-    const modalVideo = modal.querySelector('.modal-video');
-
-    modalVideo.pause();
-    modal.style.display = 'none';
-    backdrop.style.display = 'none';
-    document.body.style.overflow = 'auto';
-  });
-
-  // Close modal when clicking on backdrop
-  document.getElementById('modalBackdrop').addEventListener('click', function () {
-    const modal = document.getElementById('videoModal');
-    const modalVideo = modal.querySelector('.modal-video');
-
-    modalVideo.pause();
-    modal.style.display = 'none';
-    this.style.display = 'none';
-    document.body.style.overflow = 'auto';
-  });
 
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', loadStoriesFromProxy);

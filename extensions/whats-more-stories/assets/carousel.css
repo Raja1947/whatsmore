@@ -339,37 +339,40 @@
   }
 
   /* Play/Pause overlay */
-  .play-pause-overlay {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: calc(100% - 40px);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    opacity: 0;
-    transition: opacity 0.3s ease;
-    pointer-events: none;
-    z-index: 10;
-  }
+ .play-pause-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: rgba(0, 0, 0, 0.3);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  pointer-events: none;
+}
 
-  .play-pause-overlay.visible {
-    opacity: 1;
-  }
+.play-pause-overlay.visible {
+  opacity: 1;
+}
 
-  .play-pause-icon svg {
-    font-size: 5px;
-    color: white;
-    background: rgba(0, 0, 0, 0.5);
-    border-radius: 50%;
-    width: 50px;
-    height: 50px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
+.play-pause-icon {
+  width: 60px;
+  height: 60px;
+  background-color: rgba(0, 0, 0, 0.7);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
 
+.play-pause-icon svg {
+  width: 24px;
+  height: 24px;
+  color: white;
+}
   @media (max-width: 1024px) {
     .video-modal {
       width: 90%;
